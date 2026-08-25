@@ -53,12 +53,18 @@ sources:
     retention_days: 14
 
   - key: conversation_id
-    name: The Conversation — Indonesia
-    url: https://theconversation.com/id/articles.atom
+    name: The Conversation — Indonesia (Kesehatan)
+    url: https://theconversation.com/id/kesehatan/articles.atom
     licence: cc
-    weight: 0.8                # nearest verified SE Asia signal; not health-only
+    weight: 0.9                # SE Asia signal, and now health-only
     sections: [explainer, also_reading]
-    retention_days: 21
+    retention_days: 77         # verified: 25 items, 9 in last 30d
+    notes: >
+      The edition-wide feed (/id/articles.atom) carried roughly twice the
+      volume and mostly not health — folklore, pets, forest fires. This is
+      the health section: ~1.9 items/week, nearly all usable. Same CC-BY-ND
+      licence and full text. Copy is in Indonesian. There is no /id/health/
+      path; that 404s. Key kept so stored items keep their source.
 
   # --- Journals (weekly by nature — aligned with the publish cycle) --------
   - key: nejm
@@ -90,6 +96,52 @@ sources:
     sections: [journals]
     retention_days: 4
 
+  # The regional trio — the reason the issue is not entirely UK/US/global.
+  # Surveyed and measured in docs/asia-sources.md.
+  - key: annals_sg
+    name: Annals, Academy of Medicine Singapore
+    url: https://annals.edu.sg/feed/
+    licence: cc                # CC BY-NC-SA 4.0, open access since April 2023
+    weight: 1.0                # Singapore's own journal; peak relevance for this audience
+    sections: [journals, global_health]
+    retention_days: 41         # verified: 10 items, 4 in last 30d
+    notes: >
+      Full article text in-feed (10k-39k chars), strongly Singapore and
+      South-East Asia weighted — SEA stroke bibliometrics, adaptive expertise
+      in the region, myopia and dementia burden in China. Note the licence is
+      CC-BY-NC-SA, not the CC-BY-ND the other `cc` sources carry: the
+      non-commercial term fits a free channel, but share-alike is a real
+      condition, so downgrade this row to link_only if the channel ever
+      monetises. About one item a week, and roughly one in ten is an
+      administrative "Continuing Medical Education" post carrying no body.
+
+      Behind Cloudflare, and answers GitHub Actions runners with 403 while
+      serving normally elsewhere — verified in CI on 2026-08-25. Same
+      position as NEJM: `poll` classifies it as blocked rather than failed,
+      so it costs nothing, but it will yield no items until the poller has
+      a residential or proxied egress address. No tolerate_failure needed;
+      that flag is for non-blocked failures like nature_med's 500.
+
+  - key: lancet_wpc
+    name: The Lancet Regional Health — Western Pacific
+    url: https://www.thelancet.com/rssfeed/lanwpc_online.xml
+    weight: 0.9
+    sections: [journals, global_health]
+    retention_days: 37         # verified: 16 items, 15 in last 30d
+    notes: >
+      Same RSS 1.0 / dc:date shape as the `lancet` row, so entry_date already
+      handles it. Gold open access, so not marked paywalled — but article
+      pages 403 to datacenter IPs even while the feed serves, so the licence
+      could not be confirmed and this stays at the link_only default.
+
+  - key: lancet_sea
+    name: The Lancet Regional Health — Southeast Asia
+    url: https://www.thelancet.com/rssfeed/lansea_online.xml
+    weight: 0.9
+    sections: [journals, global_health]
+    retention_days: 299        # verified: 15 items, 8 in last 30d
+    notes: Same shape, same unconfirmed licence, as lancet_wpc.
+
   - key: nature_med
     name: Nature Medicine
     url: https://www.nature.com/nm.rss
@@ -116,6 +168,33 @@ sources:
     weight: 0.8                # US-centric; useful for policy contrast
     sections: [policy, also_reading]
     retention_days: 6
+
+  # --- Singapore official (no feed at all; see sources/moh.py) -------------
+  - key: moh_sg
+    name: MOH Singapore
+    url: https://www.moh.gov.sg/newsroom/
+    adapter: moh_newsroom
+    weight: 1.0                # the health ministry of the audience's own country
+    sections: [policy, also_reading]
+    retention_days: 170        # verified: 200 records, the adapter's cap
+    notes: >
+      No feed exists — /rss, /feed.xml and /newsroom/rss.xml all 404. The
+      newsroom page embeds its whole 8,367-item index in a Next.js flight
+      payload, and the poller asks for the first 0.5 MB of it. CloudFront
+      grants that range only sometimes and answers a cache hit with the whole
+      7.5 MB, so the daily transfer swings between the two; the adapter reads
+      the newest 200 records either way. Verified from a GitHub Actions runner
+      on 2026-08-25 — 206, range granted, unlike from a residential path the
+      same day — so unlike nejm and annals_sg this one is not egress-blocked. Titles are published in capitals and are recased on
+      the way in; items carry no summary, because the index has none and
+      MOH's Terms of Use forbid reproducing the body text the item pages
+      carry — so these render as title and link, like WHO news items.
+
+      Volume is about 11 items a week overall, but that is dominated by
+      Parliamentary QA arriving in bursts on sitting days; the steady part
+      is Press Releases and Forum Replies, roughly 1.5 a week. The first
+      poll ingests the whole window at once — about 170 days at 200 records —
+      and recency() decays it, exactly as it does bbc_health's 126 days.
 
   # --- Official (public domain, JSON not RSS) ------------------------------
   - key: who_news
@@ -152,7 +231,16 @@ sources:
 #   feeds.bmj.com        TLS handshake failure
 #   blogs.bmj.com/bmj    BMJ Opinion, dead since 2022-01-13
 #   medscape.com         Cloudflare bot challenge
-#   moh.gov.sg           no RSS (Isomer platform), all feed paths 404
-#   medicine.nus.edu.sg  Imperva/Incapsula bot protection
-#   duke-nus.edu.sg      Imperva/Incapsula bot protection
+#   moh.gov.sg           no RSS (Isomer platform), all feed paths 404 — but the
+#                        newsroom index is readable another way; see
+#                        docs/asia-sources.md
+#   medicine.nus.edu.sg  WordPress with feeds disabled (500, "No feed available")
+#   duke-nus.edu.sg      reachable again 2026-08-25, but no feed at any path
 #   lkcmedicine.ntu.edu.sg  gateway 502
+#   straitstimes.com     feeds are healthy, but no health section exists and
+#                        keyword-filtering general news yields ~0 healthcare
+#                        items; measured in docs/asia-sources.md
+#
+# Asia/Singapore candidates not yet promoted here — verified volumes, licences
+# and open questions in docs/asia-sources.md, re-runnable via
+# `python tools/verify_feeds.py config/candidates-asia.yaml`.

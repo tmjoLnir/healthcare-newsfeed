@@ -1,0 +1,279 @@
+# Singapore / Asia candidate sources — a survey file, not a live config.
+#
+# The poller never reads this. It exists so the sweep can be repeated in one
+# command from a network that is not behind a restrictive egress policy:
+#
+#     python tools/verify_feeds.py config/candidates-asia.yaml
+#
+# Findings, volumes and the reasoning behind each verdict are in
+# docs/asia-sources.md. Verified 2026-08-25 except where marked UNVERIFIED.
+#
+# Second sweep, 2026-08-25, after seven hosts were opened: annals.edu.sg was
+# promoted into sources.yaml; healthcareasiamagazine.com, medicalchannelasia.com
+# and news.nus.edu.sg are live but were rejected on review — see their rows.
+# CNA is still unreachable: the apex koreabiomed.com opened but 301s to a www
+# host that did not, and www.channelnewsasia.com remains blocked.
+
+defaults:
+  adapter: rss
+  licence: link_only
+  poll_hours: 24
+  enabled: true
+
+sources:
+
+  # --- PROMOTED into config/sources.yaml on 2026-08-25 --------------------
+  # Kept here as the record of what was measured. annals_sg joined them after
+  # the second sweep. Disabled so the two files do not both claim them.
+  #
+  #   lancet_wpc, lancet_sea, conversation_id_health, annals_sg
+  #
+  # --- Verified live ------------------------------------------------------
+  # These parse through sources/rss.py unchanged.
+
+  - key: lancet_wpc
+    enabled: false             # promoted to sources.yaml
+    name: The Lancet Regional Health — Western Pacific
+    url: https://www.thelancet.com/rssfeed/lanwpc_online.xml
+    weight: 1.0
+    sections: [journals, global_health]
+    retention_days: 37         # verified: 16 items, 15 in last 30d
+    notes: >
+      Same RSS 1.0 / dc:date shape as the configured `lancet` source, so
+      entry_date already handles it. Article pages 403 from datacenter IPs
+      even though the feed serves, so the licence could not be confirmed —
+      the title is gold open access, but start at link_only, which is
+      correct either way.
+
+  - key: lancet_sea
+    enabled: false             # promoted to sources.yaml
+    name: The Lancet Regional Health — Southeast Asia
+    url: https://www.thelancet.com/rssfeed/lansea_online.xml
+    weight: 1.0
+    sections: [journals, global_health]
+    retention_days: 299        # verified: 15 items, 8 in last 30d
+    notes: Same shape and same unconfirmed licence as lancet_wpc.
+
+  - key: conversation_id_health
+    enabled: false             # promoted to sources.yaml
+    name: The Conversation — Indonesia (Kesehatan)
+    url: https://theconversation.com/id/kesehatan/articles.atom
+    licence: cc                # CC-BY-ND, same as the other editions
+    weight: 0.9
+    sections: [explainer, also_reading]
+    retention_days: 77         # verified: 25 items, 9 in last 30d
+    notes: >
+      Health-only section feed — a replacement for the edition-wide
+      conversation_id row rather than an addition. ~1.9 items/week against
+      3.9 edition-wide, but nearly all of it usable. Full text (~7,000
+      chars), in Indonesian. There is no /id/health/ path; that 404s.
+
+  # --- Verified dead: keep the row so it is not retried in good faith -----
+
+  - key: straitstimes_sg
+    name: The Straits Times — Singapore
+    url: https://www.straitstimes.com/news/singapore/rss.xml
+    enabled: false
+    weight: 0.5
+    sections: [also_reading]
+    notes: >
+      Feed is healthy — and still the wrong source. No health section feed
+      exists (/news/health/ and /tags/health/ both empty), so it would mean
+      keyword-filtering general news: 6 of 50 items matched, and those were
+      court and traffic reports mentioning a hospital. Holds under two days
+      of history, so a daily poll would drop items. Hard paywalled.
+      Measurements in docs/asia-sources.md.
+
+  - key: duke_nus
+    name: Duke-NUS Medical School
+    url: https://www.duke-nus.edu.sg/allnews/rss
+    enabled: false
+    weight: 0.5
+    sections: [also_reading]
+    notes: >
+      Host is reachable again — the Imperva block noted in the README has
+      lifted — but no feed exists. /feed, /allnews/rss and /newshub/rss all
+      return HTML with a 200; /rss.xml and /sitemap.xml 404.
+
+  - key: nus_medicine
+    name: NUS Yong Loo Lin School of Medicine
+    url: https://medicine.nus.edu.sg/feed/
+    enabled: false
+    weight: 0.5
+    sections: [also_reading]
+    notes: WordPress with feeds disabled — 500, {"code":"wp_die","message":"No feed available."}
+
+  # --- Second sweep: live, but rejected on review -------------------------
+  # The audience is pre-med and medical-school applicants, and selection
+  # favours ethics, policy, global health and new treatments. Liveness was
+  # never the bar; register is.
+
+  - key: annals_sg
+    name: Annals, Academy of Medicine Singapore
+    url: https://annals.edu.sg/feed/
+    enabled: false
+    licence: cc
+    weight: 1.0
+    sections: [journals, global_health]
+    notes: >
+      PROMOTED to sources.yaml — the find of the second sweep. Singapore's own
+      peer-reviewed journal, CC BY-NC-SA 4.0, full text in-feed, strongly
+      SEA-weighted. ~1 item/week.
+
+  - key: healthcareasia
+    name: Healthcare Asia Magazine
+    url: https://healthcareasiamagazine.com/rss.xml
+    enabled: false
+    weight: 0.7
+    sections: [also_reading, policy]
+    notes: >
+      REJECTED. Live at /rss.xml (not /feed, which 404s): 49 items, ~21/week,
+      the highest volume of anything surveyed. But it is investor and market
+      trade press — urinalysis market sizing, OUE Healthcare's privatisation
+      offer, CKD drug sales forecasts, APAC gastroscope growth rates. Wrong
+      register for interview preparation. The feed is also malformed: the
+      <title> element carries a summary sentence rather than a headline, and
+      summaries are empty, so items would render as a stray fact plus a link.
+
+  - key: medicalchannelasia
+    name: Medical Channel Asia
+    url: https://medicalchannelasia.com/feed/
+    enabled: false
+    weight: 0.7
+    sections: [also_reading, explainer]
+    notes: >
+      REJECTED. Live and well-formed — WordPress, full text (~6,850 chars),
+      ~2.3 items/week, Singapore-based. But it is consumer wellness, not
+      medicine: pickleball injuries, coffee and body fat, dental anxiety.
+      Reconsider if a consumer-health section is ever wanted; it is the best
+      feed of that kind found.
+
+  - key: nus_news
+    name: NUS Newsroom
+    url: https://news.nus.edu.sg/feed/
+    enabled: false
+    weight: 0.5
+    sections: [also_reading]
+    notes: >
+      REJECTED. Live, 25 items, ~19/week — but university-wide PR, not health.
+      One of seven sampled items was health-adjacent; the rest were arbitration
+      centres, edge AI and horseshoe crabs. Same failure mode as the Straits
+      Times: filtering a general feed for health yields almost nothing.
+
+  - key: gnews_sg_health
+    name: Google News — Singapore healthcare query
+    url: https://news.google.com/rss/search?q=Singapore+healthcare+OR+hospital+OR+MOH&hl=en-SG&gl=SG&ceid=SG:en
+    enabled: false
+    weight: 0.4
+    sections: [also_reading]
+    notes: >
+      REJECTED for now, but the most promising fallback if CNA never opens.
+      Works well — 100 items, ~18/week, genuinely on-topic. Two blockers: item
+      links are news.google.com/rss/articles/CBMi… redirects rather than
+      publisher URLs, which breaks the store's canonical-URL identity and
+      would make the digest link to a redirector; and it aggregates the
+      paywalled outlets it surfaces. Would need a URL-resolution step first.
+
+  # --- UNVERIFIED: blocked by this session's egress policy, not by the host
+  # Enabled so a sweep from an unblocked network actually tests them. Expect
+  # this whole block to fail when run from inside a restricted environment.
+
+  - key: cna_singapore
+    name: CNA — Singapore
+    url: https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=10416
+    weight: 0.8
+    sections: [also_reading, policy]
+    notes: >
+      UNVERIFIED. Highest-value candidate: the only Singapore general-news
+      outlet with documented per-section RSS, and unpaywalled. The category
+      id is the part to confirm — CNA also publishes a "Mind Your Mental
+      Health" section feed whose id was not recoverable from here.
+
+  - key: cna_asia
+    name: CNA — Asia
+    url: https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6511
+    weight: 0.7
+    sections: [also_reading]
+    notes: UNVERIFIED. Category id needs confirming.
+
+  - key: koreabiomed
+    name: Korea Biomedical Review
+    url: https://www.koreabiomed.com/rss/allArticle.xml
+    weight: 0.8
+    sections: [also_reading, policy]
+    notes: >
+      UNVERIFIED still. The apex koreabiomed.com was opened in the second
+      sweep but 301s to www.koreabiomed.com, which was not — so every feed
+      path under it still fails at CONNECT. Needs the www host opened too.
+
+  - key: healthcareasia
+    name: Healthcare Asia Magazine
+    url: https://healthcareasiamagazine.com/feed
+    weight: 0.7
+    sections: [also_reading, policy]
+    notes: UNVERIFIED. Regional healthcare trade press.
+
+  - key: medicalchannelasia
+    name: Medical Channel Asia
+    url: https://medicalchannelasia.com/feed/
+    weight: 0.7
+    sections: [also_reading, explainer]
+    notes: UNVERIFIED. Singapore-based, WordPress — /feed/ is the likely path.
+
+  - key: asianscientist
+    name: Asian Scientist Magazine
+    url: https://www.asianscientist.com/feed/
+    weight: 0.7
+    sections: [also_reading]
+    notes: UNVERIFIED. Singapore-based; science-wide rather than health-only.
+
+  - key: mobihealthnews
+    name: MobiHealthNews (HIMSS)
+    url: https://www.mobihealthnews.com/feed
+    weight: 0.6
+    sections: [also_reading]
+    notes: UNVERIFIED. Global digital-health trade press with an APAC desk; not Asia-only.
+
+  - key: biospectrumasia
+    name: BioSpectrum Asia
+    url: https://www.biospectrumasia.com/rssfeed/1
+    weight: 0.6
+    sections: [also_reading]
+    notes: UNVERIFIED. Feed id may need confirming.
+
+  - key: scmp_health
+    name: South China Morning Post — Health
+    url: https://www.scmp.com/rss/318208/feed
+    paywalled: true
+    weight: 0.6
+    sections: [also_reading]
+    notes: UNVERIFIED. Feed id may need confirming.
+
+  - key: toi_health
+    name: The Times of India — Health
+    url: https://timesofindia.indiatimes.com/rssfeeds/3908999.cms
+    weight: 0.5
+    sections: [also_reading]
+    notes: UNVERIFIED. High volume; likely needs a low weight if added.
+
+  - key: thehindu_health
+    name: The Hindu — Health
+    url: https://www.thehindu.com/sci-tech/health/feeder/default.rss
+    weight: 0.6
+    sections: [also_reading]
+    notes: UNVERIFIED.
+
+# No feed path exists (checked 2026-08-25) — these need an adapter, not a URL:
+#   moh.gov.sg   /rss, /feed.xml, /newsroom/rss.xml all 404 — now a configured
+#                source all the same: sources/moh.py reads the 8,367-item index
+#                out of the newsroom page's Next.js payload. See
+#                docs/asia-sources.md and tools/moh_newsroom_probe.py.
+#
+# No regional split available:
+#   who.int      /southeastasia/api/news/newsitems and the Western Pacific
+#                equivalent 404; the HQ OData collection carries no region
+#                field (Provider is OpenAccessDataProvider for every record).
+#
+# Dead topic feeds:
+#   theconversation.com/topics/singapore-1123      last item 812 days old
+#   theconversation.com/topics/southeast-asia-1211 last item 3,696 days old

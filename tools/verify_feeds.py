@@ -46,12 +46,13 @@ TIMEOUT = 30
 _CA = os.environ.get("REQUESTS_CA_BUNDLE") or os.environ.get("SSL_CERT_FILE")
 
 
-def fetch(url: str) -> tuple[int, bytes]:
+def fetch(url: str, headers: dict | None = None) -> tuple[int, bytes]:
     ctx = ssl.create_default_context(cafile=_CA) if _CA else ssl.create_default_context()
     req = urllib.request.Request(url, headers={
         "User-Agent": UA,
         "Accept": "application/rss+xml,application/atom+xml,application/xml,"
                   "text/xml,application/json,*/*",
+        **(headers or {}),
     })
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx) as r:
@@ -145,6 +146,48 @@ def check_odata(url: str) -> dict:
     return row
 
 
+def check_moh(url: str) -> dict:
+    """MOH has no feed: the index is read out of a Next.js flight payload.
+
+    Delegating to the adapter keeps one parser rather than two — this sweep
+    is a gate, and a gate that checks something other than what the poller
+    does is not one. Imported lazily so the rest of the sweep still runs
+    from a checkout without the package importable.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+    from healthcare_newsfeed.models import Licence, Source
+    from healthcare_newsfeed.sources.base import FeedError
+    from healthcare_newsfeed.sources.moh import WINDOW_BYTES, MohNewsroomAdapter
+
+    row: dict = {"http": 0, "ok": False, "format": "next-flight", "blocked": False}
+    source = Source(key="moh_sg", name="MOH", url=url, adapter="moh_newsroom",
+                    licence=Licence.LINK_ONLY, weight=1.0, sections=())
+    code, body = fetch(url, headers={"Range": f"bytes=0-{WINDOW_BYTES}"})
+    row["http"] = code
+    row["blocked"] = code in BLOCKED_CODES
+    if code not in (200, 206):
+        row["error"] = body.decode("utf-8", "replace")[:100].strip()
+        return row
+    try:
+        items = MohNewsroomAdapter().parse(body, source)
+    except FeedError as exc:
+        row["error"] = str(exc)[:100]
+        return row
+
+    dates = sorted((i.published for i in items if i.published), reverse=True)
+    row["items"] = len(items)
+    if dates:
+        row["newest"] = dates[0].strftime("%Y-%m-%d")
+        row["oldest"] = dates[-1].strftime("%Y-%m-%d")
+        row["age_hours"] = round((NOW - dates[0]).total_seconds() / 3600, 1)
+        row["last_7d"] = sum(1 for d in dates if (NOW - d).days < 7)
+        row["retention_days"] = (NOW - dates[-1]).days
+    # Items are title + link by design; see sources/moh.py.
+    row["summary_chars"] = 0
+    row["ok"] = True
+    return row
+
+
 def verdict(row: dict) -> str:
     if not row.get("ok"):
         label = "BLOCKED" if row.get("blocked") else "FAIL"
@@ -179,7 +222,8 @@ def main() -> int:
         if not source.get("enabled", defaults.get("enabled", True)):
             continue
         adapter = source.get("adapter", defaults.get("adapter", "rss"))
-        row = check_odata(source["url"]) if adapter == "who_odata" else check_rss(source["url"])
+        check = {"who_odata": check_odata, "moh_newsroom": check_moh}.get(adapter, check_rss)
+        row = check(source["url"])
         row["key"] = source["key"]
         rows.append(row)
         if not row["ok"]:

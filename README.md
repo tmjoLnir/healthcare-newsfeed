@@ -2,13 +2,13 @@
 
 A weekly healthcare-news digest for aspiring doctors, published to a Telegram channel.
 
-Fourteen sources are polled daily, deduplicated and ranked; once a week the best
+Eighteen sources are polled daily, deduplicated and ranked; once a week the best
 dozen items are assembled into a structured issue and posted. The audience is
 pre-med and medical-school applicants, so selection favours what actually helps
 at interview — ethics, health policy, global health and new treatments — over
 breaking-news volume.
 
-> **Status: complete end to end.** All fourteen sources fetch and persist
+> **Status: complete end to end.** All eighteen sources fetch and persist
 > daily, a week's candidates cluster, rank and fill the issue's sections, and
 > `newsfeed publish` renders the issue and posts it to the channel. Preview
 > any week with `newsfeed publish --dry-run`, which needs no bot token. What
@@ -157,7 +157,7 @@ went to a Lancet comment and a MedPage summary while the WHO outbreak report
 
 ## Sources
 
-Fourteen sources, all verified reachable on 2026-08-25.
+Eighteen sources, all verified reachable on 2026-08-25.
 
 | Source | Format | Items/week | Summary text | Licence |
 |---|---|---|---|---|
@@ -166,17 +166,28 @@ Fourteen sources, all verified reachable on 2026-08-25.
 | BBC Health | RSS 2.0 | 22 | 107 ch | link only |
 | The Conversation — UK Health | Atom | 17 | 6,270 ch | **CC-BY-ND** |
 | The Conversation — AU Health | Atom | 12 | 6,380 ch | **CC-BY-ND** |
-| The Conversation — Indonesia | Atom | 17 | 7,463 ch | **CC-BY-ND** |
+| The Conversation — Indonesia (Kesehatan) | Atom | ~2 | 7,275 ch | **CC-BY-ND** |
+| Annals, Academy of Medicine Singapore | RSS 2.0 | ~1 | 13,360 ch | **CC-BY-NC-SA** · blocked from CI |
 | The Lancet | RSS 1.0 | 16 | 558 ch | link only · paywalled |
+| The Lancet Regional Health — Western Pacific | RSS 1.0 | ~3.5 | 550 ch | link only |
+| The Lancet Regional Health — Southeast Asia | RSS 1.0 | ~2 | 452 ch | link only |
 | JAMA — Online First | RSS 2.0 | 14 | 188 ch | link only · paywalled |
 | NEJM | RSS 1.0 | 13 | 87 ch | link only · paywalled |
 | Nature Medicine | RSS 1.0 | 8 | 359 ch | link only · paywalled |
 | BMJ Journal of Medical Ethics | RSS 2.0 | 0-2 | 5,376 ch | link only |
 | KFF Health News | RSS 2.0 | 10 | 6,862 ch | **CC, republishable** |
+| MOH Singapore | Next.js page | ~11 | none | link only |
 | WHO — News | OData JSON | ~6 | none | public domain |
 | WHO — Disease Outbreak News | OData JSON | ~1 | 1,251 ch | public domain |
 
-Three of these need handling that differs from the rest:
+Three of them are the regional signal, added after the survey in
+[docs/asia-sources.md](docs/asia-sources.md): Singapore's own journal and the
+two Lancet regional titles, joined by The Conversation's Indonesian *health*
+section in place of its edition-wide feed. Annals is the one source whose
+licence is neither CC-BY-ND nor link-only — CC-BY-NC-SA carries a share-alike
+term, so it would need downgrading to link_only if the channel ever monetised.
+
+Four others need handling that differs from the rest:
 
 **WHO publishes no usable RSS.** Every documented feed path returns 404, and the
 one URL that still resolves is abandoned — 25 items spanning over a year. Live
@@ -199,11 +210,46 @@ arbitrary page: unordered, the first three records came back dated 2017, 2020
 and 2016. The adapter therefore checks the ordering it asked for actually took
 effect, rather than storing a decade-old backlog as though it were this week.
 
+**MOH publishes no feed, and does not need one.** `/rss`, `/feed.xml` and
+`/newsroom/rss.xml` all 404 — the site runs on Isomer Next. But the newsroom
+listing page embeds its whole 8,367-item index in the Next.js flight payload,
+newest first, each record carrying a real publication date, a category and a
+title. The index begins 4.3% into a 7.5 MB page and is ordered newest first, so
+the poller asks for the first 500 KB of it — about six months of history.
+
+That range is an optimisation rather than a contract. MOH sits behind
+CloudFront, which answers a cache hit with the whole page and no
+`Accept-Ranges`: eight consecutive requests measured on 2026-08-25 all returned
+200 and 7.5 MB, where the same request had returned 206 earlier that day. So
+the adapter reads at most the newest 200 records whichever size arrives, parses
+a partial page and a whole one identically, and the daily transfer swings
+between 0.5 MB and 7.5 MB depending on the cache. Handled by `sources/moh.py`.
+
+MOH itself is reachable from an Actions runner — verified in CI on 2026-08-25,
+which was granted the byte range the same day a residential path was refused
+it. So it does not join NEJM and Annals in needing a proxied egress address.
+
+Two things follow. MOH sets headlines in capitals, which would shout among
+every other source's sentence case, so the adapter recases them — best-effort,
+since capitalising the source destroyed the difference between an acronym and
+an ordinary word. And items carry no summary at all: the index has none, and
+MOH's [Terms of Use](https://www.moh.gov.sg/terms-of-use/) forbid reproducing
+site contents without written permission, so the body text on the item pages is
+deliberately left alone. MOH items render as title and link, like WHO news.
+
 **NEJM supplies no summary, and blocks datacenter IPs.** Its feed carries an
 87-character citation string where the description belongs, so NEJM items render
 title + link only. It also returns 403 to GitHub Actions runners while serving
 normally from other networks — so the deployed poller may need a residential or
 proxied egress address to reach it.
+
+**Annals is blocked from Actions runners too.** Verified in CI on 2026-08-25:
+the feed serves normally from an ordinary network but Cloudflare answers the
+runner with 403, so `newsfeed poll` reports it blocked and it contributes
+nothing to the issue until egress is sorted. Two of the seventeen sources now
+need that proxied address, not one — worth weighing before adding a third
+Cloudflare-fronted publisher. `poll` classifies 401/403/429 as *blocked* rather
+than *failed*, so neither source fails the daily run.
 
 **The ethics blog is bursty.** Roughly 1-2 posts a week on average, but it can
 fall silent for a fortnight — which is why the ethics section may be empty rather
@@ -217,14 +263,17 @@ Documented so they are not retried in good faith:
 |---|---|
 | **The BMJ** | Cloudflare returns 429/403 to datacenter IPs; `feeds.bmj.com` fails TLS; *BMJ Opinion* has been dead since January 2022 |
 | **Medscape** | Cloudflare bot challenge |
-| **MOH Singapore** | No RSS — the site runs on Isomer; every feed path 404s |
-| **NUS Medicine**, **Duke-NUS** | Imperva/Incapsula bot protection |
+| **NUS Medicine** | WordPress with feeds disabled — 500, `{"code":"wp_die","message":"No feed available."}` |
+| **Duke-NUS** | Host reachable again as of 2026-08-25, but no feed exists at any path |
 | **LKC Medicine NTU** | Gateway 502 |
 
-Singapore-institution coverage has **no RSS path at all** — four sources, four
-different failure modes. The Conversation's Indonesian edition is the nearest
-verified regional signal. Covering MOH properly would mean scraping its static
-Isomer pages, which is tractable but a separate decision.
+Singapore *institutions* have no RSS path at all — three schools, three failure
+modes. MOH is the exception, and it is a configured source: it publishes no feed
+either, but `sources/moh.py` reads its newsroom index out of the rendered
+page (see below).
+[docs/asia-sources.md](docs/asia-sources.md) has the survey the regional sources
+came out of, and [`config/candidates-asia.yaml`](config/candidates-asia.yaml)
+re-runs the sweep in one command.
 
 BMJ blocks datacenter IPs outright, and NEJM does the same to GitHub Actions
 runners — so expect some publishers to treat any shared egress address this way.
@@ -367,7 +416,7 @@ SOURCE             HTTP  ITEMS NEWEST       7D  CHARS  VERDICT
 statnews           200      20 2026-08-24   20    700  ok — 6d window, daily poll required
 medpage            200      20 2026-08-24   20    247  ok — 3d window, daily poll required
 ...
-14/14 sources healthy
+18/18 sources healthy
 ```
 
 It exits non-zero if an enabled source fails, so it can gate a deployment.
@@ -392,7 +441,7 @@ nejm               blocked        -    -  nejm: HTTP 403
 nature_med         failed         -    -  nature_med: HTTP 500  (tolerated)
 who_dons           skip           -    -  polled 6.2h ago, every 24h
 
-12/14 sources polled, 318 new items, 1 not yet due
+16/18 sources polled, 318 new items, 1 not yet due
 ```
 
 `--only KEY…` polls named sources, `--force` ignores `poll_hours`, `--dry-run`
@@ -460,6 +509,16 @@ Both workflows share one `concurrency` group, because the file is
 read-modify-write and two overlapping runs would lose whichever finished
 first.
 
+**Two sources need an egress address the runner does not have.** NEJM and
+Annals both answer GitHub Actions runners with 403 while serving normally from
+an ordinary network — confirmed in two consecutive CI runs on 2026-08-25.
+`poll` classifies 401/403/429 as *blocked* rather than *failed*, so neither
+breaks the daily run: they contribute nothing, and the issue is assembled from
+the other fifteen. Restoring them means giving the poller a residential or
+proxied egress address, or a self-hosted runner. Until then `poll`'s summary
+line is where to notice it — a source blocked every day is a source that is not
+in the digest, and nothing else will say so.
+
 [docs/persistent-store.md](docs/persistent-store.md) has the sizing that
 settled this, the free options that were compared, and how to operate it.
 
@@ -492,7 +551,7 @@ changing either:
 
 ```
 config/
-  sources.yaml        14 sources: weights, sections, licences, retention data
+  sources.yaml        18 sources: weights, sections, licences, retention data
   digest.yaml         section order, headings, per-section quotas
 src/healthcare_newsfeed/
   models.py           Source, RawItem, Item, Section, Digest, Licence
@@ -526,8 +585,17 @@ tests/                offline, fixture-driven
 - [x] Telegram rendering and publishing
 - [x] A store that outlives the runner — a GitHub Release asset, sized and
       chosen in [docs/persistent-store.md](docs/persistent-store.md)
+- [x] An MOH adapter — no feed exists, so `sources/moh.py` reads the newsroom
+      index out of the page's Next.js payload, capped at the newest 200 records
+- [x] Singapore and Asia coverage decided and shipped — Annals plus the two
+      Lancet regional titles, and The Conversation Indonesia moved to its
+      health section. Surveyed, measured and costed in
+      [docs/asia-sources.md](docs/asia-sources.md), including what was
+      rejected and why
 
-Open, and a judgement call rather than a gap:
+Open, and judgement calls rather than gaps:
 
-- [ ] Decide Singapore coverage — scrape MOH's Isomer pages, or keep relying
-      on The Conversation Indonesia as the regional signal
+- [ ] Egress that reaches NEJM, Annals and CNA. Two configured sources are
+      blocked from Actions runners today, and CNA — the one Singapore
+      general-news outlet with per-section RSS, unpaywalled — could not be
+      reached to evaluate at all
