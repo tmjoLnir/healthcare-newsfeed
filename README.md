@@ -221,9 +221,19 @@ That range is an optimisation rather than a contract. MOH sits behind
 CloudFront, which answers a cache hit with the whole page and no
 `Accept-Ranges`: eight consecutive requests measured on 2026-08-25 all returned
 200 and 7.5 MB, where the same request had returned 206 earlier that day. So
-the adapter reads at most the newest 200 records whichever size arrives, parses
+the adapter reads at most the newest 40 records whichever size arrives, parses
 a partial page and a whole one identically, and the daily transfer swings
 between 0.5 MB and 7.5 MB depending on the cache. Handled by `sources/moh.py`.
+
+The cap, not the range, is what bounds a poll — and it is set against how MOH
+publishes rather than against a span. Parliamentary QAs arrive in same-day
+bursts of twenty or more, so 40 records reaches back three weeks where the
+~11/week average would suggest a month. Three weeks is deliberate: `window()`
+selects on when an item was *stored*, so everything the first poll returns
+becomes a candidate for that week's issue, and `select()` has no score floor —
+a stale item still fills an optional section when nothing competes for it. At
+40 the oldest item a first poll can introduce scores about 0.74 on recency; at
+200 it was four months old and scored 0.0.
 
 MOH itself is reachable from an Actions runner — verified in CI on 2026-08-25,
 which was granted the byte range the same day a residential path was refused
@@ -586,7 +596,7 @@ tests/                offline, fixture-driven
 - [x] A store that outlives the runner — a GitHub Release asset, sized and
       chosen in [docs/persistent-store.md](docs/persistent-store.md)
 - [x] An MOH adapter — no feed exists, so `sources/moh.py` reads the newsroom
-      index out of the page's Next.js payload, capped at the newest 200 records
+      index out of the page's Next.js payload, capped at the newest 40 records
 - [x] Singapore and Asia coverage decided and shipped — Annals plus the two
       Lancet regional titles, and The Conversation Indonesia moved to its
       health section. Surveyed, measured and costed in
