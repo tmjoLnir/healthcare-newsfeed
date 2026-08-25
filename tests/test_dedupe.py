@@ -12,7 +12,12 @@ import datetime as dt
 
 import pytest
 
-from healthcare_newsfeed.pipeline.dedupe import WINDOW, canonical_url, cluster
+from healthcare_newsfeed.pipeline.dedupe import (
+    WINDOW,
+    canonical_url,
+    cluster,
+    subjects,
+)
 
 # Real shapes from the configured sources, so a publisher changing its
 # tracking scheme shows up here rather than as duplicate items in an issue.
@@ -199,3 +204,71 @@ def test_cluster_returns_the_same_list(make_item):
     items = [make_item("A study")]
 
     assert cluster(items) is items
+
+
+# --- section markers ---------------------------------------------------------
+
+def test_a_publisher_section_marker_is_not_part_of_the_subject(make_item):
+    """The Lancet prefixes everything with its section. Two Viewpoints on
+    unrelated subjects must not look alike for sharing the word."""
+    items = [
+        make_item("[Viewpoint] What makes a meta-analysis believable?", source="lancet"),
+        make_item("[Viewpoint] Ambient scribes as narrative technologies", source="lancet"),
+    ]
+
+    cluster(items)
+
+    assert items[0].cluster_id != items[1].cluster_id
+
+
+def test_a_marker_does_not_stop_a_genuine_match(make_item):
+    """Stripping it must still let the same paper cluster across sources."""
+    items = [
+        make_item("[Articles] Switch to once-weekly islatravir-lenacapavir for HIV-1",
+                  source="lancet"),
+        make_item("Switch to once-weekly islatravir-lenacapavir for HIV-1", source="nejm"),
+    ]
+
+    cluster(items)
+
+    assert items[0].cluster_id == items[1].cluster_id
+
+
+# --- subjects ----------------------------------------------------------------
+
+def test_a_subject_is_a_word_few_of_the_weeks_titles_carry(make_item):
+    items = [make_item(f"Bundibugyo outbreak update {n}", source="who_dons")
+             for n in range(3)]
+    items += [make_item(f"Ordinary clinical item {n}", source="bbc_health")
+              for n in range(60)]
+
+    found = subjects(items)
+
+    assert "bundibugyo" in found[items[0].id]
+    assert "ordinary" not in found[items[3].id], "a word in most titles names nothing"
+
+
+def test_a_field_of_medicine_is_not_a_subject(make_item):
+    """Two items are not one running story for both concerning cancer."""
+    items = [
+        make_item("Cancer drug dosages challenged by patients", source="kff"),
+        make_item("Sugar rationing and later cancer risk", source="conversation_uk"),
+    ] + [make_item(f"Filler {n}", source="bbc_health") for n in range(40)]
+
+    found = subjects(items)
+
+    assert "cancer" not in found[items[0].id]
+    assert "dosages" in found[items[0].id]
+
+
+def test_headline_scaffolding_is_not_a_subject(make_item):
+    """"How", "why" and "stop" build headlines; they do not identify one."""
+    items = [
+        make_item("How a loyalist got the nomination", source="statnews"),
+        make_item("Why editors should stop policing authorship", source="jme_ethics"),
+    ] + [make_item(f"Filler {n}", source="bbc_health") for n in range(40)]
+
+    found = subjects(items)
+
+    assert not {"how", "why", "stop", "should"} & found[items[0].id]
+    assert not {"how", "why", "stop", "should"} & found[items[1].id]
