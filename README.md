@@ -8,8 +8,9 @@ pre-med and medical-school applicants, so selection favours what actually helps
 at interview — ethics, health policy, global health and new treatments — over
 breaking-news volume.
 
-> **Status: scaffolding.** Configuration, source verification and the feed checker
-> work today. The pipeline modules are specified stubs. See [Roadmap](#roadmap).
+> **Status: half-built.** Source verification, the feed checker, both adapters
+> and the store work today — all fourteen sources fetch and persist. The
+> selection pipeline and publishing are specified stubs. See [Roadmap](#roadmap).
 
 ---
 
@@ -129,6 +130,15 @@ https://www.who.int/api/news/newsitems?$orderby=PublicationDateAndTime desc&$top
 The news collection returns no body text and relative URLs, so those items render
 as title + link. Outbreak news does carry a summary. Handled by `sources/who.py`.
 
+`ItemDefaultUrl` is a bare slug, and the base path it hangs off differs per
+collection — `https://www.who.int/news/item` for news, and
+`https://www.who.int/emergencies/disease-outbreak-news/item` for outbreak news.
+Prefixing with `https://www.who.int` alone gives a 404. Both collections are
+archives rather than windows, so `$top` without the ordering returns an
+arbitrary page: unordered, the first three records came back dated 2017, 2020
+and 2016. The adapter therefore checks the ordering it asked for actually took
+effect, rather than storing a decade-old backlog as though it were this week.
+
 **NEJM supplies no summary, and blocks datacenter IPs.** Its feed carries an
 87-character citation string where the description belongs, so NEJM items render
 title + link only. It also returns 403 to GitHub Actions runners while serving
@@ -243,7 +253,18 @@ ruff check .
 Feed samples in `tests/fixtures/` are captured responses, so the suite needs no
 network and stays stable when a publisher changes its output. The configured set
 spans RSS 1.0 (RDF), RSS 2.0, Atom and OData JSON — keep at least one fixture per
-format.
+format; `tests/fixtures/README.md` records where each came from.
+
+Two rules the adapter and store divide between them, worth knowing before
+changing either:
+
+- **`RawItem` is the item as found.** The adapter strips markup and normalises
+  dates, and nothing else — tracking parameters included. Ranking and licence
+  limits happen later, so an adapter that filtered would remove evidence the
+  pipeline needs.
+- **The store's identity is the canonical URL**, from `pipeline/dedupe.py`.
+  Inserts are append-only: a re-poll never rewrites `first_seen`, or the item
+  captured on Monday would slide into next week's issue.
 
 ### Layout
 
@@ -272,8 +293,10 @@ tests/                offline, fixture-driven
 - [x] Source research and live verification
 - [x] Feed health checker
 - [x] Source and digest configuration
-- [ ] RSS and WHO OData adapters
-- [ ] SQLite store and daily poll
+- [x] RSS/Atom adapter — all three feed formats
+- [x] SQLite store — canonical-URL identity, weekly window
+- [x] WHO OData adapter — both collections
+- [ ] `newsfeed poll`: config loading and the daily run
 - [ ] Dedupe, scoring, section selection
 - [ ] Telegram rendering and publishing
 - [ ] Decide Singapore coverage — scrape MOH, or rely on The Conversation ID

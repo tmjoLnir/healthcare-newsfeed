@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+    <channel>
+        <title><![CDATA[BBC News]]></title>
+        <description><![CDATA[BBC News - Health]]></description>
+        <link>https://www.bbc.co.uk/news/health</link>
+        <image>
+            <url>https://news.bbcimg.co.uk/nol/shared/img/bbc_news_120x60.gif</url>
+            <title>BBC News</title>
+            <link>https://www.bbc.co.uk/news/health</link>
+        </image>
+        <generator>RSS for Node</generator>
+        <lastBuildDate>Tue, 25 Aug 2026 02:00:06 GMT</lastBuildDate>
+        <atom:link href="https://feeds.bbci.co.uk/news/health/rss.xml" rel="self" type="application/rss+xml"/>
+        <copyright><![CDATA[Copyright: (C) British Broadcasting Corporation, see https://www.bbc.co.uk/usingthebbc/terms-of-use/#15metadataandrssfeeds for terms and conditions of reuse.]]></copyright>
+        <language><![CDATA[en-gb]]></language>
+        <ttl>15</ttl>
+        <item>
+            <title><![CDATA[Home-testing kits now available for women in England who have missed cervical screening]]></title>
+            <description><![CDATA[Nearly 4 million women in England can order a self-testing kits to check for high-risk HPV.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/c9w4jgg4y55o?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/c9w4jgg4y55o#0</guid>
+            <pubDate>Mon, 24 Aug 2026 23:27:50 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/2e70/live/3e5420e0-9fd4-11f1-a291-b542ee92de7c.png"/>
+        </item>
+        <item>
+            <title><![CDATA[Why is it so hard to find an NHS dentist? Find out how many have closed where you live ]]></title>
+            <description><![CDATA[Nearly 600 practices in England have withdrawn from NHS dentistry over the last 10 years, as the service heads towards a two-tier system. ]]></description>
+            <link>https://www.bbc.co.uk/news/articles/c9v4w77d9m8o?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/c9v4w77d9m8o#0</guid>
+            <pubDate>Sun, 23 Aug 2026 23:10:18 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/825a/live/3003ed30-9f80-11f1-a291-b542ee92de7c.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA[Vaccine breakthrough stops cancer returning in trial]]></title>
+            <description><![CDATA[A new jab extended the length of time patients were cancer free, but it is unclear for how long.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/c79gpv7v190o?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/c79gpv7v190o#0</guid>
+            <pubDate>Thu, 20 Aug 2026 08:10:33 GMT</pubDate>
+            <media:thumbnail width="240" height="134" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/ed5d/live/40f76380-9bfa-11f1-bbc9-198f60b94eaf.jpg"/>
+        </item>
+        <item>
+            <title><![CDATA['I can't do the things my friends do': Life as a teenage carer]]></title>
+            <description><![CDATA[Young carers face huge disadvantages growing up - one teenager explains what life is like.]]></description>
+            <link>https://www.bbc.co.uk/news/articles/c4g355k8lg4o?at_medium=RSS&amp;at_campaign=rss</link>
+            <guid isPermaLink="false">https://www.bbc.co.uk/news/articles/c4g355k8lg4o#0</guid>
+            <pubDate>Thu, 20 Aug 2026 00:49:25 GMT</pubDate>
+            <media:thumbnail width="240" height="135" url="https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/6d0a/live/6c5b7710-9b18-11f1-b8e1-e7ef86eff0e6.jpg"/>
+        </item>
+        </channel>
+</rss>
