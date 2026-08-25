@@ -152,7 +152,16 @@ sources:
 #   feeds.bmj.com        TLS handshake failure
 #   blogs.bmj.com/bmj    BMJ Opinion, dead since 2022-01-13
 #   medscape.com         Cloudflare bot challenge
-#   moh.gov.sg           no RSS (Isomer platform), all feed paths 404
-#   medicine.nus.edu.sg  Imperva/Incapsula bot protection
-#   duke-nus.edu.sg      Imperva/Incapsula bot protection
+#   moh.gov.sg           no RSS (Isomer platform), all feed paths 404 — but the
+#                        newsroom index is readable another way; see
+#                        docs/asia-sources.md
+#   medicine.nus.edu.sg  WordPress with feeds disabled (500, "No feed available")
+#   duke-nus.edu.sg      reachable again 2026-08-25, but no feed at any path
 #   lkcmedicine.ntu.edu.sg  gateway 502
+#   straitstimes.com     feeds are healthy, but no health section exists and
+#                        keyword-filtering general news yields ~0 healthcare
+#                        items; measured in docs/asia-sources.md
+#
+# Asia/Singapore candidates not yet promoted here — verified volumes, licences
+# and open questions in docs/asia-sources.md, re-runnable via
+# `python tools/verify_feeds.py config/candidates-asia.yaml`.

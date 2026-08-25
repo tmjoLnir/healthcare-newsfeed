@@ -217,14 +217,19 @@ Documented so they are not retried in good faith:
 |---|---|
 | **The BMJ** | Cloudflare returns 429/403 to datacenter IPs; `feeds.bmj.com` fails TLS; *BMJ Opinion* has been dead since January 2022 |
 | **Medscape** | Cloudflare bot challenge |
-| **MOH Singapore** | No RSS — the site runs on Isomer; every feed path 404s |
-| **NUS Medicine**, **Duke-NUS** | Imperva/Incapsula bot protection |
+| **MOH Singapore** | No RSS — the site runs on Isomer; every feed path 404s. But see below: the newsroom index is readable without one |
+| **NUS Medicine** | WordPress with feeds disabled — 500, `{"code":"wp_die","message":"No feed available."}` |
+| **Duke-NUS** | Host reachable again as of 2026-08-25, but no feed exists at any path |
 | **LKC Medicine NTU** | Gateway 502 |
 
 Singapore-institution coverage has **no RSS path at all** — four sources, four
-different failure modes. The Conversation's Indonesian edition is the nearest
-verified regional signal. Covering MOH properly would mean scraping its static
-Isomer pages, which is tractable but a separate decision.
+different failure modes. MOH is nonetheless reachable: its newsroom page embeds
+a complete 8,367-item index with real publication dates, and the host honours
+byte ranges, so one 0.5 MB request reads four months of it. That plus the two
+Lancet regional titles and The Conversation's Indonesian *health* feed are
+surveyed, measured and costed in [docs/asia-sources.md](docs/asia-sources.md);
+[`config/candidates-asia.yaml`](config/candidates-asia.yaml) re-runs the sweep
+in one command.
 
 BMJ blocks datacenter IPs outright, and NEJM does the same to GitHub Actions
 runners — so expect some publishers to treat any shared egress address this way.
@@ -529,5 +534,7 @@ tests/                offline, fixture-driven
 
 Open, and a judgement call rather than a gap:
 
-- [ ] Decide Singapore coverage — scrape MOH's Isomer pages, or keep relying
-      on The Conversation Indonesia as the regional signal
+- [ ] Decide Singapore and Asia coverage. [docs/asia-sources.md](docs/asia-sources.md)
+      surveys it: two Lancet regional titles and The Conversation Indonesia's
+      health feed are verified and need only config rows, MOH needs a small
+      adapter, and the Straits Times was measured and rejected
