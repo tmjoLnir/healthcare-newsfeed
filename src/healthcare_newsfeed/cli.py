@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 from .config import ConfigError, load_digest_template, load_sources
-from .digest.render import render
+from .digest.render import fit_to_budget, render
 from .digest.template import IssueSpec, resolve
 from .models import Digest, Source
 from .pipeline.dedupe import cluster
@@ -240,6 +240,13 @@ def assemble(args: argparse.Namespace, store: Store) -> tuple[Digest, dict, Issu
     cluster(candidates)
     score(candidates, sources)
     digest = select(candidates, template, issue, sources, week=(start, end))
+    # Quotas say what is worth carrying; the template's message budget says
+    # what there is room for. Fitting here rather than in either command is
+    # what keeps `build` showing the issue `publish` sends.
+    dropped = fit_to_budget(digest, sources, spec)
+    if dropped:
+        print(f"trimmed {len(dropped)} item(s) to fit "
+              f"{spec.max_messages} message(s)", file=sys.stderr)
     return digest, sources, spec, len(candidates)
 
 
@@ -293,6 +300,15 @@ def publish(args: argparse.Namespace) -> int:
         items = [item for section in digest.sections for item in section.items]
         print(f"{spec.title} — Issue {digest.issue}: {len(items)} of {considered} "
               f"candidates, {len(messages)} message(s)")
+
+        # fit() stops at the section floors rather than breaking them, so a
+        # template whose `min`s cannot fit its budget overruns it. Posting
+        # the extra message beats dropping a section the editor called
+        # mandatory, but it is not something to find out from the channel.
+        if spec.max_messages is not None and len(messages) > spec.max_messages:
+            print(f"warning: issue needs {len(messages)} messages against a "
+                  f"max_messages of {spec.max_messages} — the section minimums "
+                  f"in the template do not fit that budget", file=sys.stderr)
 
         client = DryRunClient() if args.dry_run else TelegramClient.from_env()
         sent = 0

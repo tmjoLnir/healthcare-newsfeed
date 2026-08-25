@@ -70,6 +70,7 @@ class IssueSpec:
     publish: str
     max_message_chars: int
     sections: tuple[SectionSpec, ...]
+    max_messages: int | None = None
 
     def section(self, key: str) -> SectionSpec | None:
         """The spec for a section key, or None if the template dropped it."""
@@ -105,6 +106,7 @@ def resolve(template: dict) -> IssueSpec:
         publish=str(issue.get("publish") or ""),
         max_message_chars=_message_limit(issue.get("max_message_chars")),
         sections=sections,
+        max_messages=_message_count(issue.get("max_messages")),
     )
 
 
@@ -147,6 +149,21 @@ def _message_limit(value: object) -> int:
             f"digest template: max_message_chars {value} leaves no room for a "
             f"heading and one item; the minimum is {MIN_MESSAGE_CHARS}"
         )
+    return value
+
+
+def _message_count(value: object) -> int | None:
+    """How many messages an issue may occupy, or None for as many as it takes.
+
+    This is a budget on the issue, not on the splitter: `max_message_chars`
+    decides where a burst breaks, while this decides how much issue there is
+    to break up. Setting it to 1 is the difference between a digest that
+    arrives as a post and one that arrives as a thread.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ConfigError(f"digest template: max_messages {value!r} is not a positive integer")
     return value
 
 

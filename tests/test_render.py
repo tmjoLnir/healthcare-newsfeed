@@ -19,13 +19,14 @@ from healthcare_newsfeed.digest.render import (
     LICENCE_CEILINGS,
     RenderError,
     escape,
+    fit_to_budget,
     render,
     strip_citation,
     strip_image_credit,
     summary_text,
     trim,
 )
-from healthcare_newsfeed.digest.template import resolve
+from healthcare_newsfeed.digest.template import IssueSpec, resolve
 from healthcare_newsfeed.models import Digest, Licence, Section
 from healthcare_newsfeed.sources.base import clean_text
 from healthcare_newsfeed.telegram import length
@@ -422,3 +423,107 @@ def _summary_line(message: str) -> str:
     """The body text of the first item in a rendered message."""
     lines = [line for line in message.splitlines() if line and not line.startswith(("<b>", "<i>"))]
     return lines[0] if lines else ""
+
+
+# --- fitting an issue to its message budget ---------------------------------
+#
+# `max_messages` is a budget on the issue; `max_message_chars` is where a burst
+# breaks. Quotas say how much of a section is worth carrying and cannot know
+# how much room there is, because what an item costs is its title, its URL and
+# its summary — none of which the template can see.
+
+def budget_template(*sections: dict, chars: int = 700, max_messages: int | None = 1) -> IssueSpec:
+    issue = {"title": "This Week in Medicine", "timezone": "UTC", "max_message_chars": chars}
+    if max_messages is not None:
+        issue["max_messages"] = max_messages
+    return resolve({"issue": issue, "sections": list(sections)})
+
+
+def budget_section(key: str, heading: str, *, low: int = 0, high: int = 9,
+                   style: str = "short") -> dict:
+    return {"key": key, "heading": heading, "min": low, "max": high, "style": style}
+
+
+@pytest.fixture
+def ranked(make_item):
+    """Items carrying the scores `fit_to_budget` drops them in."""
+    def _ranked(*scores: float, source: str = "bbc_health") -> list:
+        items = []
+        for index, value in enumerate(scores):
+            item = make_item(f"Bulletin {index} on assorted clinical matters",
+                             source=source, summary=PROSE, item_id=f"item{index:04d}")
+            item.score = value
+            items.append(item)
+        return items
+    return _ranked
+
+
+def test_an_issue_within_its_budget_is_left_alone(digest, ranked, make_source):
+    spec = budget_template(budget_section("also_reading", "📌 A", style="headline"))
+    items = ranked(9.0, 8.0)
+    issue = digest(("also_reading", "📌 A", items))
+
+    assert fit_to_budget(issue, {"bbc_health": make_source("bbc_health")}, spec) == []
+    assert len(issue.sections[0].items) == 2
+
+
+def test_no_budget_means_the_issue_is_never_trimmed(digest, ranked, make_source):
+    spec = budget_template(budget_section("journals", "📊 J"), chars=400, max_messages=None)
+    issue = digest(("journals", "📊 J", ranked(*range(9, 0, -1))))
+
+    assert fit_to_budget(issue, {"bbc_health": make_source("bbc_health")}, spec) == []
+
+
+def test_the_weakest_items_are_dropped_until_the_issue_fits(digest, ranked, make_source):
+    spec = budget_template(budget_section("journals", "📊 J"), chars=900)
+    items = ranked(9.0, 8.0, 7.0, 6.0)
+    issue = digest(("journals", "📊 J", items))
+    sources = {"bbc_health": make_source("bbc_health", sections=("journals",))}
+
+    dropped = fit_to_budget(issue, sources, spec)
+
+    assert dropped, "nothing was trimmed — the budget below would pass vacuously"
+    assert len(render(issue, sources, spec)) == 1
+    kept = [item.score for item in issue.sections[0].items]
+    assert kept == sorted(kept, reverse=True)
+    assert min(kept) > max(item.score for item in dropped), "dropped a better item than it kept"
+
+
+def test_a_sections_minimum_is_a_floor_the_budget_may_not_break(digest, ranked, make_source):
+    """The floors are what stop a heavy week emptying a thin section."""
+    spec = budget_template(budget_section("journals", "📊 J", low=3), chars=400)
+    issue = digest(("journals", "📊 J", ranked(9.0, 8.0, 7.0, 6.0)))
+    sources = {"bbc_health": make_source("bbc_health", sections=("journals",))}
+
+    fit_to_budget(issue, sources, spec)
+
+    assert len(issue.sections[0].items) == 3
+    assert len(render(issue, sources, spec)) > 1, "the floor should still overrun this budget"
+
+
+def test_a_section_trimmed_to_nothing_leaves_the_issue(digest, ranked, make_source):
+    """Same contract as a section that never filled: no bare heading."""
+    spec = budget_template(budget_section("journals", "📊 J", low=1),
+                           budget_section("policy", "🏥 P", low=0), chars=450)
+    strong, weak = ranked(9.0), ranked(1.0)
+    issue = digest(("journals", "📊 J", strong), ("policy", "🏥 P", weak))
+    sources = {"bbc_health": make_source("bbc_health", sections=("journals", "policy"))}
+
+    fit_to_budget(issue, sources, spec)
+
+    assert [section.key for section in issue.sections] == ["journals"]
+    assert "🏥 P" not in render(issue, sources, spec)[0]
+
+
+def test_a_dropped_item_is_not_marked_with_a_section(digest, ranked, make_source):
+    """It was not published, so it stays a candidate for next week."""
+    spec = budget_template(budget_section("journals", "📊 J"), chars=700)
+    items = ranked(9.0, 8.0, 7.0, 6.0)
+    for item in items:
+        item.section = "journals"
+    issue = digest(("journals", "📊 J", items))
+
+    dropped = fit_to_budget(issue, {"bbc_health": make_source("bbc_health")}, spec)
+
+    assert dropped and all(item.section is None for item in dropped)
+    assert all(item.published_in_issue is None for item in dropped)

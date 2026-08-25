@@ -337,6 +337,62 @@ def render(digest: Digest, sources: Mapping[str, Source], spec: IssueSpec) -> li
     return _pack(_header(digest, spec, limit), sections, limit)
 
 
+def fit_to_budget(digest: Digest, sources: Mapping[str, Source],
+                  spec: IssueSpec) -> list[Item]:
+    """Trim the issue until it renders within `max_messages`, in place.
+
+    Returns what was dropped, weakest first. Nothing happens when the
+    template sets no budget, or when the issue already fits.
+
+    Quotas decide how much of each section is *worth* carrying; this decides
+    how much there is room for, and the two are answered separately because
+    only one of them can be judged from the config. What an item costs is
+    its title, its URL and its summary — known once it is rendered and not
+    before — so the issue is measured rather than estimated, re-rendered
+    after each drop. A dozen renders of one issue is nothing next to
+    publishing a burst the template said would be a single post.
+
+    Items go in score order from the bottom, and only from sections holding
+    more than their `min`: the floors are what stop a heavy week crowding
+    out the thin sections, and a budget that ignored them would empty the
+    ethics corner to make room for a fourth journal paper. A section trimmed
+    to nothing drops out of the issue entirely, the same as one that never
+    filled. Dropped items are simply not published, so they keep their place
+    among next week's candidates.
+
+    When the floors alone will not fit, this stops rather than breaking
+    them, and the issue renders longer than asked. The caller is expected to
+    say so: a digest that quietly arrives as two messages is a smaller
+    problem than one that quietly arrives without its ethics section.
+    """
+    if spec.max_messages is None:
+        return []
+
+    dropped: list[Item] = []
+    while len(render(digest, sources, spec)) > spec.max_messages:
+        candidates = [
+            (section, item)
+            for section in digest.sections
+            for item in section.items
+            if len(section.items) > _floor(spec, section.key)
+        ]
+        if not candidates:
+            break
+        section, item = min(candidates, key=lambda pair: (pair[1].score or 0.0, pair[1].id))
+        section.items.remove(item)
+        item.section = None
+        dropped.append(item)
+
+    digest.sections = [section for section in digest.sections if section.items]
+    return dropped
+
+
+def _floor(spec: IssueSpec, key: str) -> int:
+    """A section's `min`, or nothing if the template has since dropped it."""
+    section_spec = spec.section(key)
+    return section_spec.min if section_spec else 0
+
+
 def _pack(header: str, sections: list[_Block], limit: int) -> list[str]:
     """Fill messages in order, breaking between items and never inside one.
 

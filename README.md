@@ -30,6 +30,11 @@ This Week in Medicine — Issue 12
 📌 Also worth reading     3-6 headlines
 ```
 
+Quotas are what a section is worth carrying, not what will fit: the issue is
+budgeted to one Telegram message, and the weakest items above each section's
+`min` are dropped until it does. A thin week publishes fewer than the maxima
+above; a heavy one does too.
+
 Sections have their own quotas rather than competing for one global ranking. A
 heavy news week therefore cannot crowd out the ethics slot — the section this
 audience benefits from most, and the one with the thinnest supply. Sections with
@@ -270,13 +275,31 @@ ships using it.
 
 ## What gets posted
 
-An issue arrives as an ordered burst of messages rather than one, because
-Telegram caps a message at 4,096 characters. Splits fall between items and
+**The issue arrives as a single message.** `max_messages: 1` in the template
+is what makes that true, and it is a budget on the issue rather than on the
+splitter: sections fill to their quotas as usual, then the weakest items
+above each section's `min` are dropped until the whole issue renders inside
+one message. This week that was six items of seventeen.
+
+Fitting is measured, not estimated. What an item costs is its title, its URL
+and its summary — none of which a quota in the config can see — so the issue
+is rendered, trimmed by one item, and rendered again. Tuning quotas until an
+issue happened to fit would hold only until a week of longer headlines.
+
+Items dropped for space are simply not published, so they keep their place
+among next week's candidates. The section floors are not negotiable: a
+budget that ignored them would empty the ethics corner to make room for a
+fourth journal paper, which is the crowding-out the quotas exist to prevent.
+When the floors alone will not fit, the issue runs long and `publish` says
+so on stderr rather than breaking one.
+
+Raise `max_messages`, or drop it entirely, and an issue too big for one
+message becomes an ordered burst instead: splits fall between items and
 repeat the section heading with `(cont.)`, so a reader landing on the second
 message still knows which block they are in. Nothing is truncated after the
-fact: each item is composed to fit the room it has, because cutting assembled
-HTML lands inside a tag and Telegram rejects the whole message rather than
-the broken span.
+fact either way: each item is composed to fit the room it has, because
+cutting assembled HTML lands inside a tag and Telegram rejects the whole
+message rather than the broken span.
 
 ### Publishers put their own boilerplate first
 

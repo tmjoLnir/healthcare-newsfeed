@@ -96,3 +96,22 @@ def test_dates_read_in_the_issues_timezone():
 def test_a_misspelled_timezone_is_an_error():
     with pytest.raises(ConfigError, match="unknown timezone"):
         resolve(template(timezone="Asia/Singapor"))
+
+
+# --- the issue's message budget ---------------------------------------------
+
+def test_the_shipped_template_asks_for_one_message():
+    """The issue is meant to arrive as a post, not a thread."""
+    spec = resolve(load_digest_template("config/digest.yaml"))
+
+    assert spec.max_messages == 1
+
+
+def test_a_template_with_no_budget_takes_as_many_messages_as_it_needs():
+    assert resolve(template()).max_messages is None
+
+
+@pytest.mark.parametrize("value", [0, -1, 1.5, "one", True])
+def test_a_message_budget_that_is_not_a_positive_integer_is_refused(value):
+    with pytest.raises(ConfigError, match="max_messages"):
+        resolve(template(max_messages=value))
