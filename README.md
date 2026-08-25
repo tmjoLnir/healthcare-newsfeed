@@ -114,6 +114,20 @@ before any gets its second choice. One pass would let an early greedy section
 take an item a later thin one was relying on, which is the crowding-out the
 per-section quotas exist to prevent.
 
+Clusters catch a story filed twice. A story that runs all week needs
+something else: the DRC Bundibugyo outbreak reached one week's candidates as
+23 items — a WHO situation report, a Nature Medicine case report, a Lancet
+comment on civil society, a BBC vaccine trial — which share a subject and
+almost no vocabulary. The closest pair of those scores 0.08 against
+`dedupe.py`'s 0.50 threshold, and loosening that is not the answer, because
+clustering closes transitively: a rule slack enough to link them chained
+that week's candidates into one 142-item blob. So `select.py` caps how many
+items in an issue may carry the same *subject* — a word distinctive enough,
+against the rest of the week's titles, to name what an item is about. The cap
+counts against the items already chosen rather than across the pool, which is
+what stops it chaining. Two, by default: enough to cover a big week properly
+and still be about more than one thing.
+
 ---
 
 ## Sources

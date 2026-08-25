@@ -8,6 +8,7 @@ silent for a fortnight).
 
 Rules:
   * one item per cluster
+  * at most SUBJECT_CAP items on any one subject
   * never republish an item carried by an earlier issue
   * a section short on supply shrinks; it does not borrow from another
 
@@ -23,10 +24,47 @@ crowding-out the quotas exist to prevent.
 
 from __future__ import annotations
 
+import collections
 import datetime as dt
 from collections.abc import Mapping
+from dataclasses import dataclass, field
 
 from ..models import Digest, Item, Section, Source
+from .dedupe import subjects
+
+SUBJECT_CAP = 2
+"""How many items in one issue may be about the same thing.
+
+Clusters catch a story filed twice; this catches a story that runs all week.
+A major outbreak legitimately produces a situation report, a case report, a
+vaccine trial and an explainer — all worth reading, but not all worth an
+issue that carries twelve other things. Two lets the digest cover a big week
+properly and still be about more than one subject.
+
+The cap is counted against the items already chosen, never across the whole
+candidate pool, so it cannot chain the way a looser cluster rule would.
+"""
+
+
+@dataclass
+class _Ledger:
+    """What must not repeat, tracked across every section as they fill."""
+
+    subject_words: Mapping[str, frozenset[str]]
+    taken: set[str] = field(default_factory=set)
+    clusters: set[str] = field(default_factory=set)
+    subjects: collections.Counter = field(default_factory=collections.Counter)
+
+    def blocks(self, item: Item) -> bool:
+        if item.id in self.taken or (item.cluster_id or item.id) in self.clusters:
+            return True
+        return any(self.subjects[word] >= SUBJECT_CAP
+                   for word in self.subject_words.get(item.id, ()))
+
+    def record(self, item: Item) -> None:
+        self.taken.add(item.id)
+        self.clusters.add(item.cluster_id or item.id)
+        self.subjects.update(self.subject_words.get(item.id, ()))
 
 
 def select(items: list[Item], template: dict, issue: int,
@@ -38,12 +76,11 @@ def select(items: list[Item], template: dict, issue: int,
 
     specs = template["sections"]
     chosen: dict[str, list[Item]] = {spec["key"]: [] for spec in specs}
-    taken: set[str] = set()
-    used_clusters: set[str] = set()
+    ledger = _Ledger(subject_words=subjects(items))
 
     for quota in ("min", "max"):
         for spec in specs:
-            _fill(spec, spec[quota], chosen, candidates, taken, used_clusters, sources)
+            _fill(spec, spec[quota], chosen, candidates, ledger, sources)
 
     sections = [
         Section(key=spec["key"], heading=spec["heading"], items=chosen[spec["key"]])
@@ -55,7 +92,7 @@ def select(items: list[Item], template: dict, issue: int,
 
 
 def _fill(spec: dict, limit: int, chosen: dict[str, list[Item]], candidates: list[Item],
-          taken: set[str], used_clusters: set[str], sources: Mapping[str, Source]) -> None:
+          ledger: _Ledger, sources: Mapping[str, Source]) -> None:
     key = spec["key"]
     picked = chosen[key]
     if len(picked) >= limit:
@@ -72,8 +109,7 @@ def _fill(spec: dict, limit: int, chosen: dict[str, list[Item]], candidates: lis
         for item in candidates:
             if len(picked) >= limit:
                 return
-            cluster = item.cluster_id or item.id
-            if item.id in taken or cluster in used_clusters:
+            if ledger.blocks(item):
                 continue
             source = sources.get(item.source_key)
             if source is None or key not in source.sections:
@@ -83,8 +119,7 @@ def _fill(spec: dict, limit: int, chosen: dict[str, list[Item]], candidates: lis
 
             item.section = key
             picked.append(item)
-            taken.add(item.id)
-            used_clusters.add(cluster)
+            ledger.record(item)
             represented.add(item.source_key)
 
 

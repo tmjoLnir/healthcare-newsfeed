@@ -40,8 +40,27 @@ def scored(make_item):
 
 
 @pytest.fixture
+def padding(make_item):
+    """Unrelated items, to make a candidate pool the size of a real week.
+
+    `subjects()` measures a word against the week's other titles, so a
+    handful of items is not a corpus it can say anything about, and the
+    proportion it applies needs a realistic denominator: four items on one
+    story is 4% of this pool, close to the 5.5% the outbreak that prompted
+    the cap actually reached. These come from a source with no sections, so
+    they count towards the measurement and can never take a slot.
+    """
+    def _pad(items: list, count: int = 100) -> list:
+        return items + [make_item(f"Unrelated bulletin {n} on assorted matters",
+                                  source="filler", item_id=f"pad{n:04d}")
+                        for n in range(count)]
+    return _pad
+
+
+@pytest.fixture
 def sources(make_source):
     return {
+        "filler": make_source("filler", sections=()),
         "jme_ethics": make_source("jme_ethics", sections=("ethics",)),
         "conversation_uk": make_source("conversation_uk",
                                        sections=("explainer", "ethics", "also_reading")),
@@ -232,3 +251,88 @@ def test_an_empty_week_still_produces_a_digest(sources):
 
     assert digest.sections == []
     assert digest.week_start < digest.week_end
+
+
+# --- subject cap -------------------------------------------------------------
+#
+# Clusters catch a story filed twice. This catches a story that runs all week:
+# the DRC Bundibugyo outbreak reached one real week's candidates as 23 items
+# whose titles share a subject and almost no vocabulary, and four of them
+# reached the issue.
+
+def test_one_running_story_cannot_fill_the_issue(scored, sources, padding):
+    """The shape that prompted this: distinct reports on one outbreak."""
+    items = scored(
+        ("Ebola disease caused by Bundibugyo virus in the Congo", "bbc_health", 9.0),
+        ("Congo Ebola outbreak on track to surpass the largest", "bbc_health", 8.0),
+        ("Scientists deploy Merck Ebola vaccine in Congo", "bbc_health", 7.0),
+        ("Communities as essential partners in Ebola response", "bbc_health", 6.0),
+        ("Hydroxyurea for children with sickle cell anaemia", "bbc_health", 5.0),
+    )
+
+    digest = select(padding(items), template(section("also_reading", low=3, high=5)), 1, sources)
+
+    carried = titles(digest, "also_reading")
+    assert sum("ebola" in title.lower() for title in carried) == 2
+    assert "Hydroxyurea for children with sickle cell anaemia" in carried
+
+
+def test_the_cap_reaches_across_sections(scored, sources, padding):
+    """Two slots for a subject in the issue, not two in every block."""
+    items = scored(
+        ("Ebola disease caused by Bundibugyo virus in the Congo", "lancet", 9.0),
+        ("Congo Ebola outbreak surpasses the largest on record", "lancet", 8.0),
+        ("Ebola vaccine deployed across the Congo", "bbc_health", 7.0),
+        ("Hydroxyurea for children with sickle cell anaemia", "bbc_health", 6.0),
+    )
+
+    digest = select(padding(items), template(section("journals", low=1, high=2),
+                                    section("also_reading", low=1, high=2)), 1, sources)
+
+    carried = titles(digest, "journals") + titles(digest, "also_reading")
+    assert sum("ebola" in title.lower() for title in carried) == 2
+
+
+def test_the_cap_does_not_chain(scored, sources, padding):
+    """It counts against what is already chosen, never across the pool.
+
+    A rule loose enough to link every report of one story transitively pulls
+    unrelated items in behind them — measured at 142 of one week's 361
+    candidates. Two items sharing a subject with a third, but nothing with
+    each other, are two subjects and not one.
+    """
+    items = scored(
+        ("Bundibugyo outbreak spreads across the Congo", "bbc_health", 9.0),
+        ("Congo announces new mining concessions", "bbc_health", 8.0),
+        ("Bundibugyo antibody cocktail shows promise", "bbc_health", 7.0),
+    )
+
+    digest = select(padding(items), template(section("also_reading", low=1, high=3)), 1, sources)
+
+    assert len(titles(digest, "also_reading")) == 3
+
+
+def test_a_capped_section_shrinks_rather_than_pads(scored, sources, padding):
+    """Same contract as thin supply: an absent item beats a repeated subject."""
+    items = scored(
+        ("Ebola disease caused by Bundibugyo virus in the Congo", "nejm", 9.0),
+        ("Congo Ebola outbreak surpasses the largest on record", "nejm", 8.0),
+        ("Ebola vaccine deployed across the Congo", "nejm", 7.0),
+    )
+
+    digest = select(padding(items), template(section("journals", low=3, high=3)), 1, sources)
+
+    assert len(titles(digest, "journals")) == 2
+
+
+def test_unrelated_items_are_untouched(scored, sources, padding):
+    """The cap must cost nothing in a week with no running story."""
+    items = scored(
+        ("Hydroxyurea for children with sickle cell anaemia", "nejm", 9.0),
+        ("Psilocybin therapy for treatment-resistant depression", "nejm", 8.0),
+        ("Rural-urban disparities in hospice delivery", "nejm", 7.0),
+    )
+
+    digest = select(padding(items), template(section("journals", low=1, high=3)), 1, sources)
+
+    assert len(titles(digest, "journals")) == 3

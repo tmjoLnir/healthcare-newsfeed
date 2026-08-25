@@ -73,9 +73,22 @@ _STOPWORDS = frozenset({
     "the", "a", "an", "of", "in", "to", "for", "and", "on", "with", "is", "are",
     "as", "at", "by", "from", "that", "this", "it", "its", "be", "has", "have",
     "new", "study", "says", "after",
+    # Interrogatives and light verbs. Headlines are built out of these — "How
+    # a loyalist got the nomination", "Why editors should stop", "Can a vaccine
+    # stop another" — and two titles sharing only "how" share nothing.
+    "how", "why", "what", "when", "can", "could", "may", "might", "will",
+    "would", "should", "not", "but", "you", "your", "their", "them", "they",
+    "about", "into", "over", "out", "than", "more", "most", "show", "shows",
+    "find", "finds", "stop", "make", "made", "take", "get", "use", "using",
 })
 
 _WORD = re.compile(r"[a-z0-9]+")
+
+# The Lancet prefixes every item with its section — "[Comment]", "[Articles]",
+# "[Correspondence]", "[Viewpoint]". That is structure, not subject, and left
+# in it makes two unrelated Viewpoints look alike. Only a short leading
+# bracket is stripped, so a bracketed phrase inside a title survives.
+_SECTION_MARKER = re.compile(r"^\s*\[[^\]]{1,24}\]\s*")
 
 # Two titles are the same story if half their subject words agree, or — for
 # titles long enough that the test means something — if one is almost wholly
@@ -102,7 +115,8 @@ WINDOW = dt.timedelta(days=21)
 
 
 def _tokens(title: str) -> frozenset[str]:
-    return frozenset(word for word in _WORD.findall(title.lower())
+    stripped = _SECTION_MARKER.sub("", title)
+    return frozenset(word for word in _WORD.findall(stripped.lower())
                      if word not in _STOPWORDS and len(word) > 2)
 
 
@@ -114,6 +128,76 @@ def _same_story(left: frozenset[str], right: frozenset[str]) -> bool:
         return True
     smaller = min(len(left), len(right))
     return smaller >= MIN_TOKENS and shared / smaller >= CONTAINMENT
+
+
+# --- subjects ---------------------------------------------------------------
+
+# A running story does not arrive as near-duplicate headlines. The DRC
+# Bundibugyo outbreak reached one week's candidates as 23 items: a WHO
+# situation report, a Nature Medicine case report, a Lancet comment on civil
+# society, a BBC vaccine trial and a Conversation explainer among them. They
+# share a subject and almost no vocabulary — the closest pair of those five
+# scores 0.08 on the similarity `cluster` uses, against a 0.50 threshold.
+#
+# Loosening that threshold is not the answer: `cluster` closes transitively,
+# so a rule slack enough to link "Scientists deploy Merck's Ebola vaccine in
+# DRC" to "[Comment] Communities and civil society..." chains the week's
+# candidates into one 142-item component. Measured, not feared.
+#
+# So subjects are a separate, non-transitive idea: the distinctive words in a
+# title, which `select` counts against the items it has already chosen rather
+# than against the whole corpus. See select.SUBJECT_CAP.
+
+# Words that name a field of medicine or a publisher's furniture rather than
+# a story. They belong in a title's tokens — "vaccine trial" and "vaccine
+# rollout" are more alike for sharing "vaccine" — but two items are not the
+# same running story merely because both concern cancer, and "stat" appears
+# only because STAT brands its metered items "STAT+:".
+_GENERIC = frozenset({
+    "health", "care", "patients", "patient", "disease", "diseases", "virus",
+    "viral", "vaccine", "vaccines", "cancer", "drug", "drugs", "treatment",
+    "treatments", "trial", "trials", "therapy", "risk", "doctors", "medical",
+    "medicine", "research", "hospital", "hospitals", "guidelines", "stat",
+})
+
+SUBJECT_MAX_DF = 0.06
+"""How common a word may be and still name a subject.
+
+Measured over one week of real candidates (361 items): "ebola" appears in 20
+titles (5.5%), "bundibugyo" and "congo" in 14, "cancer" and "vaccine" in 12.
+"health" appears in 38 (10.5%) and names nothing in particular. The cut falls
+between them, and errs generous — a word wrongly counted as a subject defers
+one item to next week's issue, which is the cheap direction to be wrong in.
+"""
+
+
+def subjects(items: list[Item]) -> dict[str, frozenset[str]]:
+    """Per item id, the words distinctive enough to say what it is about.
+
+    Distinctiveness is relative to the week in hand: a word is a subject when
+    it appears in few enough of this week's titles. That self-calibrates —
+    "ebola" is a subject in a week with an outbreak and, in a week with two
+    passing mentions, it is a subject then too, which is the point.
+
+    Being a proportion, it needs a corpus to be a proportion of: below about
+    34 items the ceiling rounds down to one, no word is shared, and this
+    returns nothing anyone can be capped on. That is the right answer rather
+    than a gap — a window that thin means the poll has stopped, and one
+    subject repeating is the least of what is wrong with the issue.
+    """
+    frequency: dict[str, int] = {}
+    tokenised = {}
+    for item in items:
+        tokenised[item.id] = tokens = _tokens(item.title)
+        for token in tokens:
+            frequency[token] = frequency.get(token, 0) + 1
+
+    ceiling = max(1, int(len(items) * SUBJECT_MAX_DF))
+    return {
+        item_id: frozenset(t for t in tokens
+                           if frequency[t] <= ceiling and t not in _GENERIC)
+        for item_id, tokens in tokenised.items()
+    }
 
 
 def _when(item: Item) -> dt.datetime:
