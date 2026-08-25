@@ -241,6 +241,22 @@ Roughly one item in ten is an administrative "Continuing Medical Education"
 post with a 178-character body — the scorer deprioritises it naturally, and the
 section quotas drop it, so it needs no special handling.
 
+**One caveat found only after it shipped.** Annals sits behind Cloudflare and
+answers GitHub Actions runners with 403 while serving normally from an ordinary
+network — the CI feed sweep confirmed it on 2026-08-25. That is the same
+position NEJM is in, and `poll` already classifies 401/403/429 as *blocked*
+rather than *failed*, so it costs nothing and needs no `tolerate_failure`. But
+it does mean Annals will contribute nothing to the published issue until the
+poller has a residential or proxied egress address. Two of seventeen sources
+now need one.
+
+The block is worth understanding precisely, because it is not purely about IP:
+`annals.edu.sg` serves a request with no User-Agent at all, and serves a browser
+User-Agent from an ordinary network, but rejects `Python-urllib/3.11` outright.
+`sources/base.py` already sends a browser User-Agent for exactly this reason, so
+the remaining 403 from CI is IP reputation on top of that — the same thing BMJ
+does to every datacenter address.
+
 ### Live, but rejected on review
 
 The audience is pre-med and medical-school applicants and selection favours

@@ -167,7 +167,7 @@ Seventeen sources, all verified reachable on 2026-08-25.
 | The Conversation — UK Health | Atom | 17 | 6,270 ch | **CC-BY-ND** |
 | The Conversation — AU Health | Atom | 12 | 6,380 ch | **CC-BY-ND** |
 | The Conversation — Indonesia (Kesehatan) | Atom | ~2 | 7,275 ch | **CC-BY-ND** |
-| Annals, Academy of Medicine Singapore | RSS 2.0 | ~1 | 13,360 ch | **CC-BY-NC-SA** |
+| Annals, Academy of Medicine Singapore | RSS 2.0 | ~1 | 13,360 ch | **CC-BY-NC-SA** · blocked from CI |
 | The Lancet | RSS 1.0 | 16 | 558 ch | link only · paywalled |
 | The Lancet Regional Health — Western Pacific | RSS 1.0 | ~3.5 | 550 ch | link only |
 | The Lancet Regional Health — Southeast Asia | RSS 1.0 | ~2 | 452 ch | link only |
@@ -214,6 +214,14 @@ effect, rather than storing a decade-old backlog as though it were this week.
 title + link only. It also returns 403 to GitHub Actions runners while serving
 normally from other networks — so the deployed poller may need a residential or
 proxied egress address to reach it.
+
+**Annals is blocked from Actions runners too.** Verified in CI on 2026-08-25:
+the feed serves normally from an ordinary network but Cloudflare answers the
+runner with 403, so `newsfeed poll` reports it blocked and it contributes
+nothing to the issue until egress is sorted. Two of the seventeen sources now
+need that proxied address, not one — worth weighing before adding a third
+Cloudflare-fronted publisher. `poll` classifies 401/403/429 as *blocked* rather
+than *failed*, so neither source fails the daily run.
 
 **The ethics blog is bursty.** Roughly 1-2 posts a week on average, but it can
 fall silent for a fortnight — which is why the ethics section may be empty rather
