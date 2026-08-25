@@ -97,6 +97,7 @@ sources:
     paywalled: true
     sections: [journals]
     retention_days: 4
+    tolerate_failure: true
     notes: Host responds intermittently; tolerate fetch failure without failing the run.
 
   # --- Ethics (thin supply, high value — protected by its own quota) -------

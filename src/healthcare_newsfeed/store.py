@@ -9,6 +9,7 @@ Tables
 ------
 items     one row per canonical_url; append-only apart from pipeline columns
 issues    one row per published weekly digest
+polls     one row per source: when it was last reached, and how it went
 
 Timestamps are stored as UTC ISO-8601 strings to the second, so SQLite's
 lexicographic ordering is chronological and a window query is a plain BETWEEN.
@@ -52,7 +53,23 @@ CREATE TABLE IF NOT EXISTS items (
 -- window() scans by first_seen; select() excludes what earlier issues carried.
 CREATE INDEX IF NOT EXISTS items_first_seen ON items (first_seen);
 CREATE INDEX IF NOT EXISTS items_issue ON items (published_in_issue);
+
+-- What `newsfeed poll` did last time, per source. last_success is what makes
+-- poll_hours mean anything: without it every run would re-fetch every source,
+-- and a failure would be invisible the moment the run's output scrolled away.
+CREATE TABLE IF NOT EXISTS polls (
+    source_key   TEXT PRIMARY KEY,
+    last_attempt TEXT NOT NULL,
+    last_success TEXT,
+    status       TEXT NOT NULL,
+    fetched      INTEGER NOT NULL DEFAULT 0,
+    added        INTEGER NOT NULL DEFAULT 0,
+    detail       TEXT
+);
 """
+
+POLL_STATUSES = ("ok", "blocked", "failed")
+"""blocked is the host refusing us — see sources/base.py BLOCKED_CODES."""
 
 
 def item_id(canonical: str) -> str:
@@ -167,6 +184,40 @@ class Store:
             )
         for item in items:
             item.published_in_issue = issue
+
+    def record_poll(self, source_key: str, *, status: str, fetched: int = 0,
+                    added: int = 0, detail: str | None = None) -> None:
+        """Note how one source's poll went.
+
+        A failed attempt updates last_attempt but leaves last_success alone,
+        so a source that is failing stays due and is retried on the next run
+        rather than waiting out its poll_hours.
+        """
+        if status not in POLL_STATUSES:
+            raise ValueError(f"unknown poll status {status!r}; expected one of {POLL_STATUSES}")
+        now = _iso(dt.datetime.now(dt.UTC))
+        with self.conn:
+            self.conn.execute(
+                "INSERT INTO polls "
+                "(source_key, last_attempt, last_success, status, fetched, added, detail) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?) "
+                "ON CONFLICT(source_key) DO UPDATE SET "
+                "  last_attempt = excluded.last_attempt, "
+                "  last_success = COALESCE(excluded.last_success, polls.last_success), "
+                "  status = excluded.status, "
+                "  fetched = excluded.fetched, "
+                "  added = excluded.added, "
+                "  detail = excluded.detail",
+                (source_key, now, now if status == "ok" else None, status,
+                 fetched, added, detail),
+            )
+
+    def last_successful_poll(self, source_key: str) -> dt.datetime | None:
+        """When this source last came back with items, or None if never."""
+        row = self.conn.execute(
+            "SELECT last_success FROM polls WHERE source_key = ?", (source_key,)
+        ).fetchone()
+        return _from_iso(row["last_success"]) if row else None
 
     def close(self) -> None:
         self.conn.close()
