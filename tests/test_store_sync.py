@@ -91,8 +91,10 @@ def env(tmp_path):
 
 
 def run(env, verb, **overrides):
+    # check=False: the refusals under test are non-zero exits, so a raise here
+    # would hide the very thing being asserted on.
     return subprocess.run(
-        [str(SCRIPT), verb], capture_output=True, text=True,
+        [str(SCRIPT), verb], capture_output=True, text=True, check=False,
         env={**env.environ, **overrides}, cwd=env.tmp,
     )
 
