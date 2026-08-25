@@ -309,6 +309,56 @@ either sweep replaces it.
 
 ---
 
+## Third sweep — 2026-08-25, CNA egress
+
+`channelnewsasia.com` was opened. **It is the wrong host, and CNA is still
+unreachable.**
+
+The apex serves nothing but an unconditional redirect — the site root and the
+feed path alike:
+
+```
+$ curl -sS -D- -o /dev/null \
+    'https://channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=10416'
+HTTP/2 301
+location: https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=10416
+```
+
+and `www.channelnewsasia.com` is still denied at CONNECT. The egress proxy's
+own status endpoint records the refusal verbatim:
+
+```
+"kind": "connect_rejected",
+"detail": "gateway answered 403 to CONNECT (policy denial or upstream failure)",
+"host": "www.channelnewsasia.com:443"
+```
+
+So both CNA rows still fail the sweep — now at the redirect target rather than
+at the first hop, which looks different but reaches exactly as far. `cna.asia`
+and `www.cnalifestyle.com` were probed once each on the chance that CNA serves
+the feed from a second hostname; both are blocked too.
+
+This is the same shape as the koreabiomed block from the second sweep, and
+`www.koreabiomed.com` re-checked as blocked here as well. The lesson for the
+next request is worth stating plainly: **the allowlist entry has to name the
+`www` host.** Opening an apex that only redirects buys nothing — the policy is
+enforced per CONNECT hostname, and a redirect target is a separate CONNECT.
+
+Nothing about CNA's value has changed, and nothing about it could be measured:
+volume, retention window, summary shape and the category ids (`10416` for
+Singapore, `6511` for Asia, plus the "Mind Your Mental Health" id that was
+never recoverable) all remain exactly as unverified as after the first sweep.
+
+One thing this sweep did establish, about the tooling rather than CNA: a
+CONNECT refusal surfaces to `verify_feeds.py` as a transport error with no HTTP
+status, so it prints `FAIL http 0` rather than `BLOCKED`, even though it is the
+same class of thing — where the check runs, not a fault in the feed. Left
+as-is deliberately: on `sources.yaml` in CI, a proxy denial is a broken-egress
+signal that should fail the build loudly, unlike the publisher IP-reputation
+403s `BLOCKED_CODES` is there to absorb.
+
+---
+
 ## Recommendation
 
 1. ~~Add `lancet_wpc` and `lancet_sea`~~ — **done.** Both in `sources.yaml` at
@@ -318,9 +368,12 @@ either sweep replaces it.
 3. ~~Add `annals_sg`~~ — **done**, after the second sweep. Weight 1.0, `cc`.
 4. ~~Build the MOH adapter~~ — **done.** `sources/moh.py`, ~11 items a week
    overall and ~1.5 of the steady kind, `link_only`, newest 40 records a poll.
-5. **Get `www.channelnewsasia.com` and `www.koreabiomed.com` opened**, then
-   re-run `config/candidates-asia.yaml`. CNA is the one gap neither sweep
-   filled, and the only outstanding item on this survey.
+5. **Get `www.channelnewsasia.com` and `www.koreabiomed.com` opened** — the
+   `www` hosts specifically; the third sweep confirmed that opening the apex of
+   either does nothing, because both apexes only `301` to a `www` host that is
+   still refused at CONNECT. Then re-run `config/candidates-asia.yaml`. CNA is
+   the one gap no sweep has filled, and the only outstanding item on this
+   survey.
 
 The config is now at eighteen sources, all verified reachable, with the
 regional four carrying Asia and Singapore.

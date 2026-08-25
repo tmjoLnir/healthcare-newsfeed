@@ -639,4 +639,8 @@ Open, and judgement calls rather than gaps:
 - [ ] Egress that reaches NEJM, Annals and CNA. Two configured sources are
       blocked from Actions runners today, and CNA — the one Singapore
       general-news outlet with per-section RSS, unpaywalled — could not be
-      reached to evaluate at all
+      reached to evaluate at all. `channelnewsasia.com` was opened on
+      2026-08-25 and did not help: the apex only `301`s to
+      `www.channelnewsasia.com`, which is still refused at CONNECT. The
+      allowlist needs the `www` host by name — same for `www.koreabiomed.com`.
+      See [docs/asia-sources.md](docs/asia-sources.md) third sweep

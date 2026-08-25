@@ -13,6 +13,11 @@
 # and news.nus.edu.sg are live but were rejected on review — see their rows.
 # CNA is still unreachable: the apex koreabiomed.com opened but 301s to a www
 # host that did not, and www.channelnewsasia.com remains blocked.
+#
+# Third sweep, 2026-08-25: channelnewsasia.com was opened — the apex, which
+# serves only a 301 to www.channelnewsasia.com, still refused at CONNECT. CNA
+# remains unmeasured. The allowlist entry has to name the www host; the same
+# is true of www.koreabiomed.com, re-confirmed blocked.
 
 defaults:
   adapter: rss
@@ -184,17 +189,26 @@ sources:
     weight: 0.8
     sections: [also_reading, policy]
     notes: >
-      UNVERIFIED. Highest-value candidate: the only Singapore general-news
-      outlet with documented per-section RSS, and unpaywalled. The category
-      id is the part to confirm — CNA also publishes a "Mind Your Mental
-      Health" section feed whose id was not recoverable from here.
+      UNVERIFIED after three sweeps. Highest-value candidate: the only
+      Singapore general-news outlet with documented per-section RSS, and
+      unpaywalled. The category id is the part to confirm — CNA also publishes
+      a "Mind Your Mental Health" section feed whose id was not recoverable
+      from here.
+
+      The third sweep opened the apex channelnewsasia.com, which 301s every
+      path — root and feed alike — to www.channelnewsasia.com, still denied at
+      CONNECT, so nothing is readable through it. Do not switch this URL to the
+      apex: it reaches the same wall one hop later. cna.asia and
+      www.cnalifestyle.com are blocked too. The www host is what needs opening.
 
   - key: cna_asia
     name: CNA — Asia
     url: https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6511
     weight: 0.7
     sections: [also_reading]
-    notes: UNVERIFIED. Category id needs confirming.
+    notes: >
+      UNVERIFIED. Category id needs confirming. Same host block as
+      cna_singapore — see that row.
 
   - key: koreabiomed
     name: Korea Biomedical Review
@@ -204,7 +218,8 @@ sources:
     notes: >
       UNVERIFIED still. The apex koreabiomed.com was opened in the second
       sweep but 301s to www.koreabiomed.com, which was not — so every feed
-      path under it still fails at CONNECT. Needs the www host opened too.
+      path under it still fails at CONNECT. Needs the www host opened too;
+      re-confirmed blocked in the third sweep.
 
   - key: healthcareasia
     name: Healthcare Asia Magazine
