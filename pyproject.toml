@@ -1,0 +1,32 @@
+[project]
+name = "healthcare-newsfeed"
+version = "0.1.0"
+description = "Weekly healthcare-news digest for aspiring doctors, published to Telegram"
+requires-python = ">=3.11"
+dependencies = [
+    "feedparser>=6.0.11",
+    "PyYAML>=6.0",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+# ruff is pinned: a minor bump adds rules and turns CI red on unchanged code.
+dev = ["pytest>=8.0", "ruff==0.16.4"]
+
+[project.scripts]
+newsfeed = "healthcare_newsfeed.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

@@ -1,0 +1,29 @@
+name: publish
+
+on:
+  schedule:
+    - cron: "0 11 * * 0"     # Sunday 11:00 UTC = 19:00 SGT
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build and print the issue without posting"
+        type: boolean
+        default: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt -e .
+
+      - name: Publish weekly issue
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NEWSFEED_DB: data/newsfeed.db
+        run: newsfeed publish ${{ inputs.dry_run && '--dry-run' || '' }}

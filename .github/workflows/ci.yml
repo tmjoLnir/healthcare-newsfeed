@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt -e ".[dev]"
+      - run: ruff check .
+      - run: pytest -q
+
+  feeds:
+    # A real gate. verify_feeds.py separates a blocked host (403/429 on a
+    # shared CI egress address — NEJM does this to Actions runners) from a
+    # genuinely broken or abandoned feed, and only the latter fails the run.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: python tools/verify_feeds.py config/sources.yaml
