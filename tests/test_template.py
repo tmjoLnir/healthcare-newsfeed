@@ -34,7 +34,7 @@ def test_the_shipped_template_resolves():
     spec = resolve(load_digest_template("config/digest.yaml"))
 
     assert spec.title == "This Week in Medicine"
-    assert [section.key for section in spec.sections][0] == "story_of_week"
+    assert spec.sections[0].key == "story_of_week"
     assert spec.section("explainer").style == "extract"
     assert spec.section("also_reading").body_chars == 0
 

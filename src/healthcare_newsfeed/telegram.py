@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import os
 import time
+from typing import Self
 
 import httpx
 
@@ -185,7 +186,7 @@ class TelegramClient:
             self._client.close()
         self._client = None
 
-    def __enter__(self) -> TelegramClient:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *exc_info: object) -> None:
