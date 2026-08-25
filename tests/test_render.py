@@ -19,13 +19,14 @@ from healthcare_newsfeed.digest.render import (
     LICENCE_CEILINGS,
     RenderError,
     escape,
+    fit_to_budget,
     render,
     strip_citation,
     strip_image_credit,
     summary_text,
     trim,
 )
-from healthcare_newsfeed.digest.template import resolve
+from healthcare_newsfeed.digest.template import IssueSpec, resolve
 from healthcare_newsfeed.models import Digest, Licence, Section
 from healthcare_newsfeed.sources.base import clean_text
 from healthcare_newsfeed.telegram import length
@@ -42,6 +43,26 @@ PROSE = ("Health workers are continuing to treat patients and train caregivers i
 @pytest.fixture
 def spec():
     return resolve(load_digest_template("config/digest.yaml"))
+
+
+@pytest.fixture
+def extract_spec():
+    """A template whose explainer still asks for a full extract.
+
+    The shipped config asks `short` of every prose section, and 180 sits
+    below the link-only ceiling of 200 — so a section that asks for more
+    than the ceiling is the only place the licence rule and the splitter can
+    be observed at all. How much text a section asks for is an editorial
+    setting; that the renderer honours the smaller of ask and ceiling, and
+    that it splits on a section boundary, are code. These tests are about
+    the second, so they bring their own template rather than borrowing
+    whatever quota `config/digest.yaml` happens to carry this week.
+    """
+    return resolve({
+        "issue": {"title": "This Week in Medicine", "timezone": "Asia/Singapore"},
+        "sections": [{"key": "explainer", "heading": "💡 Explainer",
+                      "min": 1, "max": 12, "style": "extract"}],
+    })
 
 
 @pytest.fixture
@@ -79,13 +100,13 @@ def test_a_link_only_source_carries_a_quotation_not_an_article(digest, spec, mak
     assert body.count(item.canonical_url) == 1
 
 
-def test_a_cc_source_may_carry_the_extract_its_section_asks_for(digest, spec, make_source,
+def test_a_cc_source_may_carry_the_extract_its_section_asks_for(digest, extract_spec, make_source,
                                                                 make_item):
     item = make_item("An explainer", source="conversation_uk", summary=PROSE * 12)
     sources = {"conversation_uk": make_source("conversation_uk", sections=("explainer",),
                                               licence=Licence.CC_REPUBLISHABLE)}
 
-    body = only(render(digest(("explainer", "💡 Explainer", [item])), sources, spec))
+    body = only(render(digest(("explainer", "💡 Explainer", [item])), sources, extract_spec))
     summary = _summary_line(body)
 
     # `extract` asks for 900; the CC ceiling of 1200 does not get in the way.
@@ -95,15 +116,23 @@ def test_a_cc_source_may_carry_the_extract_its_section_asks_for(digest, spec, ma
 
 def test_the_licence_caps_the_section_not_the_other_way_round(digest, spec, make_source,
                                                               make_item):
-    """The same section renders shorter for a link-only source than a CC one."""
-    sections = ("explainer",)
+    """The same section renders shorter for a link-only source than a CC one.
+
+    On the shipped template, deliberately: a section has to ask for more
+    than the link-only ceiling of 200 before the two licences can render
+    differently at all, and `story_of_week` asking `long` is what makes that
+    true today. If every section were dropped to `short`, the whole licence
+    mechanism would go quiet without a single test noticing — so this one
+    reads the real config rather than a template of its own.
+    """
+    sections = ("story_of_week",)
     linked = make_item("Same slot", source="link", summary=PROSE * 12)
     freed = make_item("Same slot", source="cc", summary=PROSE * 12)
     sources = {"link": make_source("link", sections=sections),
                "cc": make_source("cc", sections=sections, licence=Licence.CC_REPUBLISHABLE)}
 
-    short = _summary_line(only(render(digest(("explainer", "💡 E", [linked])), sources, spec)))
-    long = _summary_line(only(render(digest(("explainer", "💡 E", [freed])), sources, spec)))
+    short = _summary_line(only(render(digest(("story_of_week", "🔬 S", [linked])), sources, spec)))
+    long = _summary_line(only(render(digest(("story_of_week", "🔬 S", [freed])), sources, spec)))
 
     assert short and long
     assert len(short) <= LICENCE_CEILINGS[Licence.LINK_ONLY] < len(long)
@@ -111,10 +140,10 @@ def test_the_licence_caps_the_section_not_the_other_way_round(digest, spec, make
 
 def test_public_domain_is_treated_as_republishable(digest, spec, make_source, make_item):
     item = make_item("An outbreak report", source="who_dons", summary=PROSE * 12)
-    sources = {"who_dons": make_source("who_dons", sections=("explainer",),
+    sources = {"who_dons": make_source("who_dons", sections=("story_of_week",),
                                        licence=Licence.PUBLIC_DOMAIN)}
 
-    summary = _summary_line(only(render(digest(("explainer", "💡 E", [item])), sources, spec)))
+    summary = _summary_line(only(render(digest(("story_of_week", "🔬 S", [item])), sources, spec)))
 
     assert len(summary) > LICENCE_CEILINGS[Licence.LINK_ONLY]
 
@@ -314,35 +343,35 @@ def test_trim_keeps_the_ellipsis_inside_the_budget():
 
 # --- splitting --------------------------------------------------------------
 
-def test_a_long_issue_is_split_into_an_ordered_burst(digest, spec, make_source, make_item):
+def test_a_long_issue_is_split_into_an_ordered_burst(digest, extract_spec, make_source, make_item):
     items = [make_item(f"Explainer {n}", source="cc", summary=PROSE * 12) for n in range(12)]
     sources = {"cc": make_source("cc", sections=("explainer",),
                                  licence=Licence.CC_REPUBLISHABLE)}
 
-    messages = render(digest(("explainer", "💡 Explainer", items)), sources, spec)
+    messages = render(digest(("explainer", "💡 Explainer", items)), sources, extract_spec)
 
     assert len(messages) > 1
-    assert all(length(message) <= spec.max_message_chars for message in messages)
+    assert all(length(message) <= extract_spec.max_message_chars for message in messages)
 
 
-def test_a_split_section_repeats_its_heading(digest, spec, make_source, make_item):
+def test_a_split_section_repeats_its_heading(digest, extract_spec, make_source, make_item):
     """A reader landing mid-block still needs to know which section it is."""
     items = [make_item(f"Explainer {n}", source="cc", summary=PROSE * 12) for n in range(12)]
     sources = {"cc": make_source("cc", sections=("explainer",),
                                  licence=Licence.CC_REPUBLISHABLE)}
 
-    messages = render(digest(("explainer", "💡 Explainer", items)), sources, spec)
+    messages = render(digest(("explainer", "💡 Explainer", items)), sources, extract_spec)
 
     assert "(cont.)" in messages[1]
     assert all("💡 Explainer" in message for message in messages[1:])
 
 
-def test_no_item_is_ever_split_across_messages(digest, spec, make_source, make_item):
+def test_no_item_is_ever_split_across_messages(digest, extract_spec, make_source, make_item):
     items = [make_item(f"Explainer {n}", source="cc", summary=PROSE * 12) for n in range(12)]
     sources = {"cc": make_source("cc", sections=("explainer",),
                                  licence=Licence.CC_REPUBLISHABLE)}
 
-    for message in render(digest(("explainer", "💡 E", items)), sources, spec):
+    for message in render(digest(("explainer", "💡 E", items)), sources, extract_spec):
         assert message.count("<a href") == message.count("</a>")
         assert message.count("<b>") == message.count("</b>")
         assert message.count("<i>") == message.count("</i>")
@@ -394,3 +423,107 @@ def _summary_line(message: str) -> str:
     """The body text of the first item in a rendered message."""
     lines = [line for line in message.splitlines() if line and not line.startswith(("<b>", "<i>"))]
     return lines[0] if lines else ""
+
+
+# --- fitting an issue to its message budget ---------------------------------
+#
+# `max_messages` is a budget on the issue; `max_message_chars` is where a burst
+# breaks. Quotas say how much of a section is worth carrying and cannot know
+# how much room there is, because what an item costs is its title, its URL and
+# its summary — none of which the template can see.
+
+def budget_template(*sections: dict, chars: int = 700, max_messages: int | None = 1) -> IssueSpec:
+    issue = {"title": "This Week in Medicine", "timezone": "UTC", "max_message_chars": chars}
+    if max_messages is not None:
+        issue["max_messages"] = max_messages
+    return resolve({"issue": issue, "sections": list(sections)})
+
+
+def budget_section(key: str, heading: str, *, low: int = 0, high: int = 9,
+                   style: str = "short") -> dict:
+    return {"key": key, "heading": heading, "min": low, "max": high, "style": style}
+
+
+@pytest.fixture
+def ranked(make_item):
+    """Items carrying the scores `fit_to_budget` drops them in."""
+    def _ranked(*scores: float, source: str = "bbc_health") -> list:
+        items = []
+        for index, value in enumerate(scores):
+            item = make_item(f"Bulletin {index} on assorted clinical matters",
+                             source=source, summary=PROSE, item_id=f"item{index:04d}")
+            item.score = value
+            items.append(item)
+        return items
+    return _ranked
+
+
+def test_an_issue_within_its_budget_is_left_alone(digest, ranked, make_source):
+    spec = budget_template(budget_section("also_reading", "📌 A", style="headline"))
+    items = ranked(9.0, 8.0)
+    issue = digest(("also_reading", "📌 A", items))
+
+    assert fit_to_budget(issue, {"bbc_health": make_source("bbc_health")}, spec) == []
+    assert len(issue.sections[0].items) == 2
+
+
+def test_no_budget_means_the_issue_is_never_trimmed(digest, ranked, make_source):
+    spec = budget_template(budget_section("journals", "📊 J"), chars=400, max_messages=None)
+    issue = digest(("journals", "📊 J", ranked(*range(9, 0, -1))))
+
+    assert fit_to_budget(issue, {"bbc_health": make_source("bbc_health")}, spec) == []
+
+
+def test_the_weakest_items_are_dropped_until_the_issue_fits(digest, ranked, make_source):
+    spec = budget_template(budget_section("journals", "📊 J"), chars=900)
+    items = ranked(9.0, 8.0, 7.0, 6.0)
+    issue = digest(("journals", "📊 J", items))
+    sources = {"bbc_health": make_source("bbc_health", sections=("journals",))}
+
+    dropped = fit_to_budget(issue, sources, spec)
+
+    assert dropped, "nothing was trimmed — the budget below would pass vacuously"
+    assert len(render(issue, sources, spec)) == 1
+    kept = [item.score for item in issue.sections[0].items]
+    assert kept == sorted(kept, reverse=True)
+    assert min(kept) > max(item.score for item in dropped), "dropped a better item than it kept"
+
+
+def test_a_sections_minimum_is_a_floor_the_budget_may_not_break(digest, ranked, make_source):
+    """The floors are what stop a heavy week emptying a thin section."""
+    spec = budget_template(budget_section("journals", "📊 J", low=3), chars=400)
+    issue = digest(("journals", "📊 J", ranked(9.0, 8.0, 7.0, 6.0)))
+    sources = {"bbc_health": make_source("bbc_health", sections=("journals",))}
+
+    fit_to_budget(issue, sources, spec)
+
+    assert len(issue.sections[0].items) == 3
+    assert len(render(issue, sources, spec)) > 1, "the floor should still overrun this budget"
+
+
+def test_a_section_trimmed_to_nothing_leaves_the_issue(digest, ranked, make_source):
+    """Same contract as a section that never filled: no bare heading."""
+    spec = budget_template(budget_section("journals", "📊 J", low=1),
+                           budget_section("policy", "🏥 P", low=0), chars=450)
+    strong, weak = ranked(9.0), ranked(1.0)
+    issue = digest(("journals", "📊 J", strong), ("policy", "🏥 P", weak))
+    sources = {"bbc_health": make_source("bbc_health", sections=("journals", "policy"))}
+
+    fit_to_budget(issue, sources, spec)
+
+    assert [section.key for section in issue.sections] == ["journals"]
+    assert "🏥 P" not in render(issue, sources, spec)[0]
+
+
+def test_a_dropped_item_is_not_marked_with_a_section(digest, ranked, make_source):
+    """It was not published, so it stays a candidate for next week."""
+    spec = budget_template(budget_section("journals", "📊 J"), chars=700)
+    items = ranked(9.0, 8.0, 7.0, 6.0)
+    for item in items:
+        item.section = "journals"
+    issue = digest(("journals", "📊 J", items))
+
+    dropped = fit_to_budget(issue, {"bbc_health": make_source("bbc_health")}, spec)
+
+    assert dropped and all(item.section is None for item in dropped)
+    assert all(item.published_in_issue is None for item in dropped)

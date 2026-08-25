@@ -9,6 +9,10 @@ issue:
   timezone: Asia/Singapore
   publish: "SUN 19:00"        # after the weekend's journal releases land
   max_message_chars: 4096     # Telegram hard limit; split on section boundaries
+  max_messages: 1             # the issue arrives as one post, not a thread:
+                              # sections fill to their quotas, then the
+                              # weakest items above each `min` are dropped
+                              # until the whole issue renders within this.
 
 sections:
 
@@ -29,7 +33,7 @@ sections:
     heading: "💡 Explainer"
     min: 1
     max: 2
-    style: extract            # CC-licensed: may carry a long extract
+    style: short              # same ask as the other sections; see README
 
   - key: ethics
     heading: "⚖️ Ethics corner"

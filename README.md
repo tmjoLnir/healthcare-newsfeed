@@ -23,12 +23,17 @@ This Week in Medicine — Issue 12
 ──────────────────────────────────────────
 🔬 Story of the week      1 item,  with context
 📊 From the journals      2-4 items (NEJM · Lancet · JAMA · Nature Medicine)
-💡 Explainer              1-2 items (full text, republishable)
+💡 Explainer              1-2 items (CC-licensed, republishable)
 ⚖️  Ethics corner          0-1 item
 🌍 Global health watch    0-2 items (WHO)
 🏥 Policy                 0-1 item
 📌 Also worth reading     3-6 headlines
 ```
+
+Quotas are what a section is worth carrying, not what will fit: the issue is
+budgeted to one Telegram message, and the weakest items above each section's
+`min` are dropped until it does. A thin week publishes fewer than the maxima
+above; a heavy one does too.
 
 Sections have their own quotas rather than competing for one global ranking. A
 heavy news week therefore cannot crowd out the ethics slot — the section this
@@ -253,22 +258,48 @@ is the smaller of the two.**
 | `long` | 400 ch | **200 ch** | 400 ch |
 | `extract` | 900 ch | **200 ch** | 900 ch |
 
-So the same explainer slot carries 900 characters of a Conversation article
-and 200 of a STAT one, without either section needing to know which source
-filled it. A summary trimmed below 60 characters is dropped entirely — three
-words and an ellipsis is worse than a headline and a link.
+So the same `long` slot carries 400 characters of a Conversation article and
+200 of a STAT one, without the section needing to know which source filled
+it. A summary trimmed below 60 characters is dropped entirely — three words
+and an ellipsis is worse than a headline and a link.
+
+The shipped template asks `short` of the explainer, so every section but the
+story of the week and the ethics corner now runs at one length. That is an
+editorial choice rather than a licence one, and it has a consequence worth
+stating: 180 sits below the link-only ceiling of 200, so in a `short` section
+a CC-licensed article and a paywalled one render identically. `extract`
+remains available for a section meant to carry real article text — nothing
+ships using it.
 
 ---
 
 ## What gets posted
 
-An issue arrives as an ordered burst of messages rather than one, because
-Telegram caps a message at 4,096 characters. Splits fall between items and
+**The issue arrives as a single message.** `max_messages: 1` in the template
+is what makes that true, and it is a budget on the issue rather than on the
+splitter: sections fill to their quotas as usual, then the weakest items
+above each section's `min` are dropped until the whole issue renders inside
+one message. This week that was six items of seventeen.
+
+Fitting is measured, not estimated. What an item costs is its title, its URL
+and its summary — none of which a quota in the config can see — so the issue
+is rendered, trimmed by one item, and rendered again. Tuning quotas until an
+issue happened to fit would hold only until a week of longer headlines.
+
+Items dropped for space are simply not published, so they keep their place
+among next week's candidates. The section floors are not negotiable: a
+budget that ignored them would empty the ethics corner to make room for a
+fourth journal paper, which is the crowding-out the quotas exist to prevent.
+When the floors alone will not fit, the issue runs long and `publish` says
+so on stderr rather than breaking one.
+
+Raise `max_messages`, or drop it entirely, and an issue too big for one
+message becomes an ordered burst instead: splits fall between items and
 repeat the section heading with `(cont.)`, so a reader landing on the second
 message still knows which block they are in. Nothing is truncated after the
-fact: each item is composed to fit the room it has, because cutting assembled
-HTML lands inside a tag and Telegram rejects the whole message rather than
-the broken span.
+fact either way: each item is composed to fit the room it has, because
+cutting assembled HTML lands inside a tag and Telegram rejects the whole
+message rather than the broken span.
 
 ### Publishers put their own boilerplate first
 
@@ -283,10 +314,11 @@ Two shapes of it, and the renderer removes both:
   answer for it. It falls out of the general rule rather than needing a
   special case.
 - **The Conversation leads with its hero image's credit.** Every article
-  opens `New Africa/Shutterstock.com …`, and the explainer section carries
-  more text than any other, so it would open on a photo agency. A credit is
-  matched only with its `/` separator — a bare agency name would fire on a
-  wire report attributed to Reuters.
+  opens `New Africa/Shutterstock.com …`, and it is the explainer section
+  those articles fill, so the block would open on a photo agency — at 180
+  characters the credit is a larger share of the item, not a smaller one.
+  A credit is matched only with its `/` separator — a bare agency name would
+  fire on a wire report attributed to Reuters.
 
 Both run at render time, not in the adapter: a `RawItem` is the item as
 found, and stripping upstream would remove evidence the scorer ranks on.
