@@ -5,10 +5,11 @@ Most sources are RSS/Atom (see `rss.py`); WHO requires a bespoke
 OData JSON adapter (see `who.py`) because it no longer publishes RSS.
 """
 
-from .base import ADAPTERS, Adapter
-from .rss import FeedError, RssAdapter
+from .base import ADAPTERS, Adapter, FeedError, clean_text
+from .rss import RssAdapter
+from .who import WhoODataAdapter
 
 ADAPTERS["rss"] = RssAdapter
-# "who_odata" registers here once sources/who.py is written.
+ADAPTERS["who_odata"] = WhoODataAdapter
 
-__all__ = ["ADAPTERS", "Adapter", "FeedError", "RssAdapter"]
+__all__ = ["ADAPTERS", "Adapter", "FeedError", "RssAdapter", "WhoODataAdapter", "clean_text"]

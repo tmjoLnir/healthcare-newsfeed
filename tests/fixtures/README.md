@@ -10,10 +10,14 @@ configured set spans RSS 1.0 (RDF), RSS 2.0, Atom and OData JSON.
 | `kff_rss2.xml` | `kffhealthnews.org/feed/` | RSS 2.0 + `content:encoded` | 2026-08-25 | 2 of 10 items |
 | `nature_med_rss1.xml` | `nature.com/nm.rss` | RSS 1.0 (RDF) | 2026-08-25 | 3 of 8 items |
 | `conversation_uk_atom.xml` | `theconversation.com/uk/health/articles.atom` | Atom 1.0 | 2026-08-25 | 3 of 25 entries |
+| `who_news_odata.json` | `who.int/api/news/newsitems` | OData JSON | 2026-08-25 | 3 of 20 records |
+| `who_dons_odata.json` | `who.int/api/news/diseaseoutbreaknews` | OData JSON | 2026-08-25 | 2 of 20 records |
 
-Each was trimmed by deleting trailing entry elements only; everything else
-is byte-for-byte as served. Two deliberate properties worth preserving when
-refreshing them:
+The feeds were trimmed by deleting trailing entry elements only; everything
+else is byte-for-byte as served. The two OData captures were truncated by
+slicing the `value` array and re-serialising, so their whitespace differs from
+the wire — no field was altered or removed. Three deliberate properties worth
+preserving when refreshing them:
 
 * `nature_med_rss1.xml` keeps its full `<items><rdf:Seq>` block — eight
   `rdf:li` references against three actual `<item>` elements. That ordering
@@ -22,6 +26,14 @@ refreshing them:
 * `bbc_health_rss2.xml` keeps the `?at_medium=RSS&at_campaign=rss` tracking
   parameters BBC appends to feed links. Stripping them is `canonical_url`'s
   job, not the adapter's.
+* The two WHO captures are a matched pair, and the point is that they do *not*
+  agree: news records have no `Summary` field at all and carry `NewsType`,
+  while outbreak news carries a plain-text `Summary`, title overrides, and
+  HTML body sections the adapter ignores. `who_dons_odata.json` is large
+  because those sections are large; keep them, since leaving them out would
+  stop the fixture proving they are ignored.
 
 Refresh by re-fetching the URL above with the browser User-Agent from
-`tools/verify_feeds.py`, then dropping the trailing entries.
+`tools/verify_feeds.py`, then dropping the trailing entries. The WHO endpoints
+need `?$orderby=PublicationDateAndTime%20desc&$top=20`; without it they return
+an arbitrary page, and a capture taken that way would be worse than useless.

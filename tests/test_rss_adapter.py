@@ -13,7 +13,8 @@ import httpx
 import pytest
 
 from healthcare_newsfeed.models import Licence, Source
-from healthcare_newsfeed.sources.rss import UA, FeedError, RssAdapter
+from healthcare_newsfeed.sources.base import UA, FeedError
+from healthcare_newsfeed.sources.rss import RssAdapter
 
 
 def make_source(key: str, url: str, licence: Licence = Licence.LINK_ONLY) -> Source:

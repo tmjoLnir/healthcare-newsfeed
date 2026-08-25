@@ -14,63 +14,12 @@ stripping HTML from summaries.
 from __future__ import annotations
 
 import datetime as dt
-import os
-import re
-from html import unescape
-from typing import Self
 from urllib.parse import urljoin
 
 import feedparser
-import httpx
 
 from ..models import RawItem, Source
-
-# Several publishers gate on User-Agent as well as on IP reputation, and
-# answer a default client string with a challenge page rather than the feed.
-# Same string as tools/verify_feeds.py, so a source that verifies also polls.
-UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
-
-ACCEPT = ("application/rss+xml,application/atom+xml,application/xml,"
-          "text/xml,application/json,*/*")
-
-HEADERS = {"User-Agent": UA, "Accept": ACCEPT}
-
-TIMEOUT = 30.0
-
-# A block on IP reputation, not a broken feed: NEJM answers GitHub Actions
-# runners this way while serving normally from elsewhere, and BMJ answers
-# every datacenter address that way. The poll caller needs to tell the two
-# apart to decide whether one dead source should fail the run.
-BLOCKED_CODES = frozenset({401, 403, 429})
-
-_SCRIPT = re.compile(r"(?is)<(script|style)\b.*?</\1>")
-# Tags that separate words. Dropped without a space they run sentences
-# together — the journals' RSS 1.0 summaries open with a `<p>` citation line
-# closed straight against the abstract.
-_BLOCK = re.compile(r"(?i)</?(?:p|br|div|li|tr|td|h[1-6]|blockquote|section|figure)\b[^>]*>")
-_TAG = re.compile(r"<[^>]+>")
-_WS = re.compile(r"\s+")
-
-
-class FeedError(RuntimeError):
-    """A source could not be fetched, or did not come back as a feed."""
-
-    def __init__(self, message: str, *, status: int | None = None) -> None:
-        super().__init__(message)
-        self.status = status
-
-    @property
-    def blocked(self) -> bool:
-        """True when the host refused us rather than the feed being broken."""
-        return self.status in BLOCKED_CODES
-
-
-def clean_text(markup: str) -> str:
-    """Reduce feed markup to the plain text a Telegram message can carry."""
-    text = _SCRIPT.sub(" ", markup or "")
-    text = _TAG.sub("", _BLOCK.sub(" ", text))
-    return _WS.sub(" ", unescape(text)).strip()
+from .base import FeedError, HttpSource, clean_text
 
 
 def entry_date(entry) -> dt.datetime | None:
@@ -120,45 +69,11 @@ def _authors(entry) -> tuple[str, ...]:
     return tuple(names)
 
 
-def _default_client() -> httpx.Client:
-    # Honour the CA bundle vars .env.example documents, for deployments behind
-    # a TLS-terminating proxy; httpx would otherwise use its own bundle.
-    ca = os.environ.get("REQUESTS_CA_BUNDLE") or os.environ.get("SSL_CERT_FILE")
-    return httpx.Client(verify=ca or True)
-
-
-class RssAdapter:
-    """Fetch one RSS/Atom source and return its current items.
-
-    Pass a client to poll several sources over one connection pool, or to
-    drive the adapter from captured responses in tests.
-    """
-
-    def __init__(self, client: httpx.Client | None = None) -> None:
-        self._client = client
-
-    @property
-    def client(self) -> httpx.Client:
-        """Built on first use, so parsing a captured response opens nothing."""
-        if self._client is None:
-            self._client = _default_client()
-        return self._client
+class RssAdapter(HttpSource):
+    """Fetch one RSS/Atom source and return its current items."""
 
     def fetch(self, source: Source) -> list[RawItem]:
-        try:
-            # Headers, timeout and redirects go on the request, not the
-            # client: a caller sharing one connection pool across the poll
-            # would otherwise fetch as python-httpx, which is enough on its
-            # own to get a challenge page from several of these publishers.
-            response = self.client.get(source.url, headers=HEADERS, timeout=TIMEOUT,
-                                       follow_redirects=True)
-            response.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            raise FeedError(f"{source.key}: HTTP {exc.response.status_code}",
-                            status=exc.response.status_code) from exc
-        except httpx.HTTPError as exc:
-            raise FeedError(f"{source.key}: {exc}") from exc
-        return self.parse(response.content, source)
+        return self.parse(self.get(source.url, source.key).content, source)
 
     def parse(self, body: bytes, source: Source) -> list[RawItem]:
         """Turn a feed response into RawItems.
@@ -200,13 +115,3 @@ class RssAdapter:
                 guid=entry.get("id") or entry.get("guid") or None,
             ))
         return items
-
-    def close(self) -> None:
-        if self._client is not None:
-            self._client.close()
-
-    def __enter__(self) -> Self:
-        return self
-
-    def __exit__(self, *exc_info: object) -> None:
-        self.close()

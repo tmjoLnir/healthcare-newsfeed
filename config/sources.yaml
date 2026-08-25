@@ -127,8 +127,10 @@ sources:
     notes: >
       The list endpoint returns Title, PublicationDateAndTime, NewsType and
       ItemDefaultUrl only — no body text — so items render title + link.
-      ItemDefaultUrl is relative; prefix with https://www.who.int.
-      NewsType ("Statement", "News release", ...) is useful for filtering.
+      ItemDefaultUrl is a bare slug; prefix with https://www.who.int/news/item
+      (verified 2026-08-25 — https://www.who.int alone 404s, and outbreak news
+      uses a different base again). NewsType ("Statement", "News release", ...)
+      is carried through as the item's category.
 
   - key: who_dons
     name: WHO — Disease Outbreak News
@@ -137,6 +139,12 @@ sources:
     licence: public_domain
     weight: 1.0
     sections: [global_health]
+    notes: >
+      Same API, different shape: records carry a plain-text Summary (~3,000
+      chars) plus HTML body sections, and ItemDefaultUrl (`/2026-DON615`)
+      hangs off https://www.who.int/emergencies/disease-outbreak-news/item.
+      The collection is an archive — $top alone returns items going back
+      months, so the poll depends on the explicit ordering.
 
 # Verified unavailable 2026-08-25 — do not re-add without re-testing:
 #   bmj.com              Cloudflare 429/403 from datacenter IPs

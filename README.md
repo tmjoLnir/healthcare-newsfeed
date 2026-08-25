@@ -8,9 +8,9 @@ pre-med and medical-school applicants, so selection favours what actually helps
 at interview — ethics, health policy, global health and new treatments — over
 breaking-news volume.
 
-> **Status: half-built.** Source verification, the feed checker, the RSS/Atom
-> adapter and the store work today; the WHO adapter, the selection pipeline and
-> publishing are specified stubs. See [Roadmap](#roadmap).
+> **Status: half-built.** Source verification, the feed checker, both adapters
+> and the store work today — all fourteen sources fetch and persist. The
+> selection pipeline and publishing are specified stubs. See [Roadmap](#roadmap).
 
 ---
 
@@ -129,6 +129,15 @@ https://www.who.int/api/news/newsitems?$orderby=PublicationDateAndTime desc&$top
 
 The news collection returns no body text and relative URLs, so those items render
 as title + link. Outbreak news does carry a summary. Handled by `sources/who.py`.
+
+`ItemDefaultUrl` is a bare slug, and the base path it hangs off differs per
+collection — `https://www.who.int/news/item` for news, and
+`https://www.who.int/emergencies/disease-outbreak-news/item` for outbreak news.
+Prefixing with `https://www.who.int` alone gives a 404. Both collections are
+archives rather than windows, so `$top` without the ordering returns an
+arbitrary page: unordered, the first three records came back dated 2017, 2020
+and 2016. The adapter therefore checks the ordering it asked for actually took
+effect, rather than storing a decade-old backlog as though it were this week.
 
 **NEJM supplies no summary, and blocks datacenter IPs.** Its feed carries an
 87-character citation string where the description belongs, so NEJM items render
@@ -286,7 +295,7 @@ tests/                offline, fixture-driven
 - [x] Source and digest configuration
 - [x] RSS/Atom adapter — all three feed formats
 - [x] SQLite store — canonical-URL identity, weekly window
-- [ ] WHO OData adapter
+- [x] WHO OData adapter — both collections
 - [ ] `newsfeed poll`: config loading and the daily run
 - [ ] Dedupe, scoring, section selection
 - [ ] Telegram rendering and publishing
