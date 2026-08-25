@@ -1,15 +1,15 @@
 # The persistent store: what it has to hold, and where it can live
 
-The roadmap's last open engineering item is *"wire up a store that outlives the
-runner before trusting the schedules."* A fresh GitHub Actions runner starts
-with an empty `data/newsfeed.db`, which defeats daily polling. This note
-measures what the store actually has to hold and checks the free options
-against it.
+A fresh GitHub Actions runner starts with an empty `data/newsfeed.db`, which
+defeats daily polling. This note measures what the store has to hold, checks
+the free options against it, and records what was built.
 
 The short version: **size is never the binding constraint.** A year of history
 is 28 MiB, against 5–10 GiB free tiers. What decides the choice is durability
 and blast radius — losing the file mid-week silently loses the issue, because
-five feeds retain less than seven days.
+five feeds retain less than seven days. The store now lives in a GitHub
+Release asset; [§5](#5-what-was-chosen-a-release-asset) is the part to read if
+you are operating it rather than re-deciding it.
 
 ---
 
@@ -127,33 +127,83 @@ Restore the file at the start of a run, upload it at the end.
 
 ---
 
-## 5. Recommendation
+## 5. What was chosen: a Release asset
 
-**Cloudflare R2 with whole-file sync, if a card on file is acceptable.** It
-costs nothing at this volume for any plausible lifetime of the project, keeps
-`store.py` untouched, has no egress charge to worry about as history grows, and
-the restored artefact is an ordinary SQLite file you can pull down and open.
+**Implemented** — `tools/store_sync.sh`, wired into both workflows.
 
-**Otherwise a GitHub Release asset**, which needs no third-party account, no
-card, and no new secret beyond the token Actions already has.
+A prerelease tagged `store` holds one asset, `newsfeed.db.gz`. Each scheduled
+run restores it before doing anything and uploads it back afterwards. It needs
+no third-party account, no card, and no secret beyond the `GITHUB_TOKEN`
+Actions already issues; a year of history is ~9 MiB against a 2 GiB per-asset
+limit.
 
-**Turso if a real remote database is wanted** — it is the only listed option
-where the driver swap is small, and its free tier has three orders of magnitude
-of headroom on both rows and bytes.
+Cloudflare R2 remains the alternative if the store ever outgrows this — same
+shape, same script structure, but it wants a card on file even on the free
+tier. Turso is the one to reach for if a real remote database is ever wanted,
+since it is the only option here whose driver swap is small.
 
-Two things to wire up whichever is chosen, because both failure modes are
-silent:
+**`actions/cache` was rejected.** Its 7-day eviction is not a tail risk: it is
+a coin flip on whether the store survives the first time anything interrupts
+the schedule, and it fails without saying so.
 
-- A `concurrency:` group on the poll and publish workflows. Every file-shaped
-  option is read-modify-write, and two overlapping runs would lose whichever
-  finished first.
-- A run that fails loudly when the restore finds nothing. An empty database is
-  currently indistinguishable from a genuinely quiet week — which is the exact
-  hazard daily polling exists to avoid.
+### How it behaves
 
-**Do not rely on `actions/cache`.** The 7-day eviction is not a tail risk here:
-it is a coin flip on whether the store survives the first time anything
-interrupts the schedule, and it fails without saying so.
+```
+newsfeed poll  ──▶  restore ──▶ poll ──▶ save
+                       │                  │
+                       │                  └─ always(), even on a failed poll
+                       └─ refuses to start empty
+```
+
+| Situation | What happens |
+|---|---|
+| No asset, scheduled run | **Fails.** An empty store publishes as a quiet week |
+| No asset, manual run with `bootstrap` | Starts empty, says so loudly |
+| Asset corrupt | **Fails**, and does not offer to bootstrap past it |
+| Poll fails on some sources | **Saves anyway** — see below |
+| Restore failed | Save never runs; the good asset is left alone |
+| Store came back smaller | **Refuses to upload** |
+
+Three of those are worth the words they cost:
+
+**A failed poll still saves.** `newsfeed poll` exits non-zero when a source
+breaks, but by then it has already committed what the other thirteen returned
+— and MedPage and JAMA will have rolled those items off within four days.
+Discarding a day's captures because one host 404'd would cause exactly the loss
+the daily schedule exists to prevent. So the save step is `if: always()`,
+guarded by the restore having succeeded.
+
+**A shrinking store is refused.** `items` is insert-only — `upsert()` is
+`INSERT OR IGNORE` and nothing in the codebase deletes rows — so the count
+cannot legitimately fall. If it has, the local file is not a descendant of the
+restored one and uploading it would destroy history. The restore records the
+count it handed over; the save checks it.
+
+**Bootstrapping is explicit, once.** A scheduled run will not create an empty
+store under any circumstances. That takes a manual `workflow_dispatch` with
+the `bootstrap` box ticked, which is the only way the first run gets off the
+ground — and the only thing standing between a lost asset and an issue built
+from nothing.
+
+The two workflows share one `concurrency: newsfeed-store` group with
+`cancel-in-progress: false`. The file is read-modify-write, so overlapping runs
+would lose whichever finished first; cancelling is worse than queueing, because
+a cancelled run has already committed items to a store it will never upload.
+
+### Operating it
+
+```bash
+# First run ever — creates the release with its first asset.
+gh workflow run poll.yml -f bootstrap=true
+
+# Look at what the schedules are actually holding.
+gh release download store --pattern newsfeed.db.gz && gunzip newsfeed.db.gz
+sqlite3 newsfeed.db 'SELECT source_key, count(*) FROM items GROUP BY 1'
+```
+
+The asset is data, not a software release: deleting it loses every item
+captured since the last poll that upstream feeds have since dropped. The
+release is marked prerelease so it stays out of "latest release".
 
 ---
 
