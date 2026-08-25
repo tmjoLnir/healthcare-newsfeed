@@ -370,10 +370,19 @@ with `publish --dry-run` when the question is how the issue reads, and with
 
 One thing to wire up before relying on them: **the store must outlive the
 runner.** A fresh GitHub Actions runner starts with an empty database, which
-defeats the whole point of polling daily. Point `NEWSFEED_DB` at hosted Postgres
-or Turso, sync the SQLite file from object storage, or — least robust —
-use `actions/cache`, which is evicted after 7 days of disuse and so only holds
-while the daily poll keeps it warm.
+defeats the whole point of polling daily.
+
+A year of history is 28 MiB — about 3 KiB an item, 0.55 MiB a week — so every
+free tier worth considering has years of headroom, and size is not what decides
+this. Durability is: losing the file mid-week loses the issue, because five
+feeds retain less than seven days. Sync the SQLite file to object storage or a
+Release asset (no code change), or move to Turso (a small driver swap —
+`NEWSFEED_DB` is a `Path` today and cannot yet hold a database URL). Avoid
+`actions/cache`, which is evicted after 7 days of disuse and so survives only
+until something interrupts the schedule — silently.
+
+[docs/persistent-store.md](docs/persistent-store.md) has the measurements and
+compares the free options.
 
 ---
 
@@ -417,6 +426,8 @@ src/healthcare_newsfeed/
   cli.py              poll · build · publish · verify
 tools/
   verify_feeds.py     feed health checker
+docs/
+  persistent-store.md store sizing, and the free options that fit it
 tests/                offline, fixture-driven
 ```
 
@@ -438,5 +449,7 @@ Open, and a judgement call rather than a gap:
 
 - [ ] Decide Singapore coverage — scrape MOH's Isomer pages, or keep relying
       on The Conversation Indonesia as the regional signal
-- [ ] Wire up a store that outlives the runner before trusting the schedules
-      (see [Deployment](#deployment))
+- [ ] Wire up a store that outlives the runner before trusting the schedules —
+      requirements measured and free options compared in
+      [docs/persistent-store.md](docs/persistent-store.md); the pick is
+      R2 or a Release asset (no code change) against Turso (a small driver swap)
