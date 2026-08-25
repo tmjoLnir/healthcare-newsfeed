@@ -261,6 +261,48 @@ def test_a_field_of_medicine_is_not_a_subject(make_item):
     assert "dosages" in found[items[0].id]
 
 
+def test_the_word_naming_the_weeks_biggest_story_is_still_a_subject(make_item):
+    """A story word is common *because* its story is running.
+
+    The regression this guards: at a 0.06 ceiling, "ebola" in 20 of a real
+    week's 324 titles was one title too common to name a subject, so the cap
+    never fired and the issue carried five reports of one outbreak. The
+    frequency that disqualified it is the same frequency that made it the
+    week's subject.
+    """
+    items = [make_item(f"Ebola outbreak in the Congo, report {n}", source="who_dons")
+             for n in range(8)]
+    items += [make_item(f"Unrelated bulletin {n} on assorted matters", source="bbc_health")
+              for n in range(92)]
+
+    found = subjects(items)
+
+    assert "ebola" in found[items[0].id], "8 of 100 titles is a running story, not noise"
+    assert "assorted" not in found[items[8].id]
+
+
+def test_an_institution_is_not_a_subject(make_item):
+    """Regulators name who acted, not what happened.
+
+    Three unrelated stories touched the FDA in one issue — a nomination, a
+    hospice-dosage study and a plan to regulate generative AI — and counting
+    them as one subject blocked the third on a rule meant for outbreaks.
+    """
+    items = [
+        make_item("How a loyalist got the FDA nomination", source="statnews"),
+        make_item("FDA plans to regulate generative artificial intelligence",
+                  source="statnews"),
+        make_item("WHO updates its leishmaniasis guidance", source="who_news"),
+    ] + [make_item(f"Filler {n}", source="bbc_health") for n in range(40)]
+
+    found = subjects(items)
+
+    assert "fda" not in found[items[0].id]
+    assert "fda" not in found[items[1].id]
+    assert "who" not in found[items[2].id]
+    assert "leishmaniasis" in found[items[2].id], "what happened is still a subject"
+
+
 def test_headline_scaffolding_is_not_a_subject(make_item):
     """"How", "why" and "stop" build headlines; they do not identify one."""
     items = [

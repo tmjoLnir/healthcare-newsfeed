@@ -41,8 +41,9 @@ vaccine trial and an explainer — all worth reading, but not all worth an
 issue that carries twelve other things. Two lets the digest cover a big week
 properly and still be about more than one subject.
 
-The cap is counted against the items already chosen, never across the whole
-candidate pool, so it cannot chain the way a looser cluster rule would.
+The count is per word and never transitive, so it cannot chain the way a
+looser cluster rule would: two items sharing a subject with a third, but
+nothing with each other, are two subjects and not one.
 """
 
 
@@ -50,21 +51,60 @@ candidate pool, so it cannot chain the way a looser cluster rule would.
 class _Ledger:
     """What must not repeat, tracked across every section as they fill."""
 
-    subject_words: Mapping[str, frozenset[str]]
+    capped: frozenset[str]
     taken: set[str] = field(default_factory=set)
     clusters: set[str] = field(default_factory=set)
-    subjects: collections.Counter = field(default_factory=collections.Counter)
 
     def blocks(self, item: Item) -> bool:
-        if item.id in self.taken or (item.cluster_id or item.id) in self.clusters:
-            return True
-        return any(self.subjects[word] >= SUBJECT_CAP
-                   for word in self.subject_words.get(item.id, ()))
+        return (item.id in self.taken
+                or (item.cluster_id or item.id) in self.clusters
+                or item.id in self.capped)
 
     def record(self, item: Item) -> None:
         self.taken.add(item.id)
         self.clusters.add(item.cluster_id or item.id)
-        self.subjects.update(self.subject_words.get(item.id, ()))
+
+
+def _capped(candidates: list[Item], subject_words: Mapping[str, frozenset[str]],
+            sources: Mapping[str, Source], keys: frozenset[str]) -> frozenset[str]:
+    """The items a subject has no slot left for, decided in score order.
+
+    A subject has SUBJECT_CAP slots and they belong to its best items. Filling
+    the sections in template order and counting as they go spends the slots in
+    the order the blocks happen to appear instead: `journals` has a min of 2
+    and `global_health` a min of 0, so on a real week the two Ebola slots went
+    to a Lancet comment and a MedPage summary while the WHO outbreak report —
+    the highest-scoring item on that subject, and the reason the section
+    exists — was refused. The cap held, and threw away the best item to do it.
+
+    So the slots are allocated here, before any section fills, over the
+    candidates in the order `select` already sorted them. Only items that
+    could actually be published are counted: one per cluster, since dedupe
+    retires the rest, and only sources this issue has a section for. A
+    section already full of higher-scoring items can still leave a slot
+    unspent, which shows up as a subject carried once rather than twice —
+    the safe direction, and rare enough to be worth the simplicity.
+    """
+    counts: collections.Counter = collections.Counter()
+    clusters: set[str] = set()
+    capped: set[str] = set()
+
+    for item in candidates:
+        source = sources.get(item.source_key)
+        if source is None or not keys.intersection(source.sections):
+            continue
+        cluster_key = item.cluster_id or item.id
+        if cluster_key in clusters:
+            continue
+        clusters.add(cluster_key)
+
+        words = subject_words.get(item.id, frozenset())
+        if any(counts[word] >= SUBJECT_CAP for word in words):
+            capped.add(item.id)
+            continue
+        counts.update(words)
+
+    return frozenset(capped)
 
 
 def select(items: list[Item], template: dict, issue: int,
@@ -76,7 +116,11 @@ def select(items: list[Item], template: dict, issue: int,
 
     specs = template["sections"]
     chosen: dict[str, list[Item]] = {spec["key"]: [] for spec in specs}
-    ledger = _Ledger(subject_words=subjects(items))
+    keys = frozenset(spec["key"] for spec in specs)
+    # subjects() measures a word against the whole week, published items
+    # included: how distinctive "ebola" is does not depend on what an earlier
+    # issue already carried.
+    ledger = _Ledger(capped=_capped(candidates, subjects(items), sources, keys))
 
     for quota in ("min", "max"):
         for spec in specs:

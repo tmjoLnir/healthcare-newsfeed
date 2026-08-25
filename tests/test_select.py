@@ -67,6 +67,9 @@ def sources(make_source):
         "nejm": make_source("nejm", sections=("journals",)),
         "lancet": make_source("lancet", sections=("journals", "global_health")),
         "bbc_health": make_source("bbc_health", sections=("story_of_week", "also_reading")),
+        # One section only, and one that fills late: the shape that decides
+        # whether the cap spends a slot on the best item or the first to ask.
+        "who_dons": make_source("who_dons", sections=("global_health",)),
     }
 
 
@@ -310,6 +313,31 @@ def test_the_cap_does_not_chain(scored, sources, padding):
     digest = select(padding(items), template(section("also_reading", low=1, high=3)), 1, sources)
 
     assert len(titles(digest, "also_reading")) == 3
+
+
+def test_the_cap_spends_its_slots_on_the_best_items(scored, sources, padding):
+    """Its two slots belong to the subject's best items, not the first askers.
+
+    Measured on a real week: `journals` has a min of 2 and `global_health` a
+    min of 0, so journals filled first and spent both Ebola slots on a Lancet
+    comment and a MedPage summary. The WHO outbreak report — the highest
+    scoring item on the subject, and the reason global_health exists — was
+    refused. The cap held and threw away the best item to do it.
+    """
+    items = scored(
+        ("Ebola outbreak situation report from the Congo", "who_dons", 9.0),
+        ("Ebola vaccine trial begins across the Congo", "lancet", 8.0),
+        ("Communities as essential partners in the Ebola response", "lancet", 7.0),
+        ("Hydroxyurea for children with sickle cell anaemia", "lancet", 6.0),
+    )
+
+    digest = select(padding(items), template(section("journals", low=2, high=4),
+                                    section("global_health", low=0, high=2)), 1, sources)
+
+    carried = titles(digest, "journals") + titles(digest, "global_health")
+    assert "Ebola outbreak situation report from the Congo" in carried
+    assert "Communities as essential partners in the Ebola response" not in carried
+    assert sum("ebola" in title.lower() for title in carried) == 2
 
 
 def test_a_capped_section_shrinks_rather_than_pads(scored, sources, padding):

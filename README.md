@@ -122,11 +122,31 @@ almost no vocabulary. The closest pair of those scores 0.08 against
 `dedupe.py`'s 0.50 threshold, and loosening that is not the answer, because
 clustering closes transitively: a rule slack enough to link them chained
 that week's candidates into one 142-item blob. So `select.py` caps how many
-items in an issue may carry the same *subject* — a word distinctive enough,
-against the rest of the week's titles, to name what an item is about. The cap
-counts against the items already chosen rather than across the pool, which is
-what stops it chaining. Two, by default: enough to cover a big week properly
-and still be about more than one thing.
+items in an issue may carry the same *subject* — a word that names what an
+item is about. The count is per word and never transitive, which is what
+stops it chaining: two items sharing a subject with a third, but nothing with
+each other, are two subjects and not one. Two, by default: enough to cover a
+big week properly and still be about more than one thing.
+
+Which word names a subject is `_GENERIC`'s job, not a frequency threshold's.
+The two interleave — in one real week "ebola" appeared in 20 of 324 titles
+and "vaccine" in 12, so no cut through that ordering keeps the first and
+drops the second. Worse, a proportional cut is at its tightest exactly when
+the cap matters most, since a story word is common *because* its story is
+running: at a 0.06 ceiling "ebola" missed by a single title, the cap never
+fired, and the issue carried five reports of one outbreak. So the threshold
+sits above the whole band as a backstop against runaway words, and the list
+carries the distinction — fields of medicine, and the regulators and
+administrations that name *who acted* rather than what happened. Three
+unrelated stories touched the FDA in one issue; that is not one subject.
+
+The cap's two slots go to the subject's best items, allocated in score order
+before any section fills. Spending them as the sections fill instead gives
+them to whichever block asks first, which is not the same thing: `journals`
+has a `min` of 2 and `global_health` a `min` of 0, so the two Ebola slots
+went to a Lancet comment and a MedPage summary while the WHO outbreak report
+— the highest-scoring item on the subject, and the reason that section exists
+— was refused. The cap held, and threw away the best item to do it.
 
 ---
 
