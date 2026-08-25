@@ -2,13 +2,13 @@
 
 A weekly healthcare-news digest for aspiring doctors, published to a Telegram channel.
 
-Fourteen sources are polled daily, deduplicated and ranked; once a week the best
+Seventeen sources are polled daily, deduplicated and ranked; once a week the best
 dozen items are assembled into a structured issue and posted. The audience is
 pre-med and medical-school applicants, so selection favours what actually helps
 at interview — ethics, health policy, global health and new treatments — over
 breaking-news volume.
 
-> **Status: complete end to end.** All fourteen sources fetch and persist
+> **Status: complete end to end.** All seventeen sources fetch and persist
 > daily, a week's candidates cluster, rank and fill the issue's sections, and
 > `newsfeed publish` renders the issue and posts it to the channel. Preview
 > any week with `newsfeed publish --dry-run`, which needs no bot token. What
@@ -157,7 +157,7 @@ went to a Lancet comment and a MedPage summary while the WHO outbreak report
 
 ## Sources
 
-Fourteen sources, all verified reachable on 2026-08-25.
+Seventeen sources, all verified reachable on 2026-08-25.
 
 | Source | Format | Items/week | Summary text | Licence |
 |---|---|---|---|---|
@@ -166,8 +166,11 @@ Fourteen sources, all verified reachable on 2026-08-25.
 | BBC Health | RSS 2.0 | 22 | 107 ch | link only |
 | The Conversation — UK Health | Atom | 17 | 6,270 ch | **CC-BY-ND** |
 | The Conversation — AU Health | Atom | 12 | 6,380 ch | **CC-BY-ND** |
-| The Conversation — Indonesia | Atom | 17 | 7,463 ch | **CC-BY-ND** |
+| The Conversation — Indonesia (Kesehatan) | Atom | ~2 | 7,275 ch | **CC-BY-ND** |
+| Annals, Academy of Medicine Singapore | RSS 2.0 | ~1 | 13,360 ch | **CC-BY-NC-SA** |
 | The Lancet | RSS 1.0 | 16 | 558 ch | link only · paywalled |
+| The Lancet Regional Health — Western Pacific | RSS 1.0 | ~3.5 | 550 ch | link only |
+| The Lancet Regional Health — Southeast Asia | RSS 1.0 | ~2 | 452 ch | link only |
 | JAMA — Online First | RSS 2.0 | 14 | 188 ch | link only · paywalled |
 | NEJM | RSS 1.0 | 13 | 87 ch | link only · paywalled |
 | Nature Medicine | RSS 1.0 | 8 | 359 ch | link only · paywalled |
@@ -176,7 +179,14 @@ Fourteen sources, all verified reachable on 2026-08-25.
 | WHO — News | OData JSON | ~6 | none | public domain |
 | WHO — Disease Outbreak News | OData JSON | ~1 | 1,251 ch | public domain |
 
-Three of these need handling that differs from the rest:
+Three of them are the regional signal, added after the survey in
+[docs/asia-sources.md](docs/asia-sources.md): Singapore's own journal and the
+two Lancet regional titles, joined by The Conversation's Indonesian *health*
+section in place of its edition-wide feed. Annals is the one source whose
+licence is neither CC-BY-ND nor link-only — CC-BY-NC-SA carries a share-alike
+term, so it would need downgrading to link_only if the channel ever monetised.
+
+Three others need handling that differs from the rest:
 
 **WHO publishes no usable RSS.** Every documented feed path returns 404, and the
 one URL that still resolves is abandoned — 25 items spanning over a year. Live
@@ -372,7 +382,7 @@ SOURCE             HTTP  ITEMS NEWEST       7D  CHARS  VERDICT
 statnews           200      20 2026-08-24   20    700  ok — 6d window, daily poll required
 medpage            200      20 2026-08-24   20    247  ok — 3d window, daily poll required
 ...
-14/14 sources healthy
+17/17 sources healthy
 ```
 
 It exits non-zero if an enabled source fails, so it can gate a deployment.
@@ -397,7 +407,7 @@ nejm               blocked        -    -  nejm: HTTP 403
 nature_med         failed         -    -  nature_med: HTTP 500  (tolerated)
 who_dons           skip           -    -  polled 6.2h ago, every 24h
 
-12/14 sources polled, 318 new items, 1 not yet due
+15/17 sources polled, 318 new items, 1 not yet due
 ```
 
 `--only KEY…` polls named sources, `--force` ignores `poll_hours`, `--dry-run`
@@ -497,7 +507,7 @@ changing either:
 
 ```
 config/
-  sources.yaml        14 sources: weights, sections, licences, retention data
+  sources.yaml        17 sources: weights, sections, licences, retention data
   digest.yaml         section order, headings, per-section quotas
 src/healthcare_newsfeed/
   models.py           Source, RawItem, Item, Section, Digest, Licence

@@ -215,18 +215,71 @@ works).
 
 ---
 
+## Second sweep — 2026-08-25, after seven hosts were opened
+
+`annals.edu.sg`, `news.nus.edu.sg`, `healthcareasiamagazine.com`,
+`medicalchannelasia.com`, `koreabiomed.com`, `news.google.com` and
+`pubmed.ncbi.nlm.nih.gov` were opened. CNA was not, and remains the biggest
+gap. Four of the newly reachable hosts serve working feeds; one earned a row.
+
+### Annals, Academy of Medicine Singapore — added
+
+`https://annals.edu.sg/feed/`. Singapore's own peer-reviewed journal, and the
+single best regional source found: 10 items, ~1/week, 41-day window, **full
+article text in-feed** (10,000–39,000 characters), and heavily Singapore and
+South-East Asia weighted. The current window carries a bibliometric analysis of
+stroke publications in South-East Asia, adaptive expertise in the region,
+China's school myopia programme and dementia burden trends in China.
+
+Licence is **CC BY-NC-SA 4.0**, open access since April 2023 and applied
+retroactively. That is a better licence than most of the set, but not the same
+shape as the CC-BY-ND the other `cc` sources carry: non-commercial fits a free
+Telegram channel, but *share-alike* is a real condition. The row is `cc`, and
+its note says to downgrade to `link_only` if the channel ever monetises.
+
+Roughly one item in ten is an administrative "Continuing Medical Education"
+post with a 178-character body — the scorer deprioritises it naturally, and the
+section quotas drop it, so it needs no special handling.
+
+### Live, but rejected on review
+
+The audience is pre-med and medical-school applicants and selection favours
+ethics, policy, global health and new treatments. Liveness was never the bar.
+
+| Candidate | Volume | Why not |
+|---|---|---|
+| **Healthcare Asia Magazine** (`/rss.xml`, not `/feed`) | ~21/wk | Investor and market trade press — urinalysis market sizing, OUE Healthcare's privatisation offer, CKD sales forecasts. Also malformed: `<title>` carries a summary sentence rather than a headline, and summaries are empty, so items would render as a stray fact plus a link |
+| **Medical Channel Asia** | ~2.3/wk | Well-formed, full text, Singapore-based — but consumer wellness, not medicine. Pickleball injuries, coffee and body fat, dental anxiety. The best feed of its kind found; reconsider only if a consumer-health section is ever wanted |
+| **NUS Newsroom** | ~19/wk | University-wide PR. One of seven sampled items was health-adjacent; the rest were arbitration centres, edge AI and horseshoe crabs. The Straits Times failure mode again |
+| **Google News** (SG healthcare query) | ~18/wk | Genuinely on-topic, and the best fallback if CNA never opens. But item links are `news.google.com/rss/articles/CBMi…` redirects, not publisher URLs, which breaks the store's canonical-URL identity and would have the digest link to a redirector. Needs a URL-resolution step first |
+
+### Still blocked
+
+`koreabiomed.com` opened at the apex but `301`s to `www.koreabiomed.com`, which
+did not — so every feed path under it still fails at CONNECT. It needs the
+`www` host opened too.
+
+**CNA remains the outstanding gap.** `www.channelnewsasia.com` is still blocked,
+and it is the only Singapore general-news outlet with documented per-section
+RSS, unpaywalled — precisely where the Straits Times failed. Nothing found in
+either sweep replaces it.
+
+---
+
 ## Recommendation
 
-1. Add `lancet_wpc` and `lancet_sea` — verified, free, no code change, ~5
-   items/week of real regional research.
-2. Point `conversation_id` at the `kesehatan` feed — verified, one URL change,
-   trades a third of the volume for health-only content.
-3. Build the MOH adapter — ~1.5 usable items a week, 0.5 MB a day, `link_only`.
-   It is the only route to Singapore-institution coverage that exists, and it
-   closes the open roadmap item.
-4. Re-run `config/candidates-asia.yaml` from an unblocked network before
-   concluding anything about CNA and the regional trade press.
+1. ~~Add `lancet_wpc` and `lancet_sea`~~ — **done.** Both in `sources.yaml` at
+   weight 0.9, sections `journals` and `global_health`.
+2. ~~Point `conversation_id` at the `kesehatan` feed~~ — **done.** URL changed,
+   key kept so stored items keep their source.
+3. ~~Add `annals_sg`~~ — **done**, after the second sweep. Weight 1.0, `cc`.
+4. **Build the MOH adapter** — still open. ~1.5 usable items a week, 0.5 MB a
+   day, `link_only`. It is the only route to Singapore-institution coverage
+   that exists, and it closes the open roadmap item.
+5. **Get `www.channelnewsasia.com` and `www.koreabiomed.com` opened**, then
+   re-run `config/candidates-asia.yaml`. CNA is the one gap neither sweep
+   filled.
 
-Steps 1 and 2 are edits to `config/sources.yaml`; step 3 is a new adapter
-alongside `sources/who.py`. None of them are done here — this is the survey they
-should be decided from.
+The config is now at seventeen sources, all verified reachable, with the
+regional trio carrying Asia. Step 4 is a new adapter alongside `sources/who.py`
+and remains a judgement call rather than a gap.

@@ -7,6 +7,12 @@
 #
 # Findings, volumes and the reasoning behind each verdict are in
 # docs/asia-sources.md. Verified 2026-08-25 except where marked UNVERIFIED.
+#
+# Second sweep, 2026-08-25, after seven hosts were opened: annals.edu.sg was
+# promoted into sources.yaml; healthcareasiamagazine.com, medicalchannelasia.com
+# and news.nus.edu.sg are live but were rejected on review — see their rows.
+# CNA is still unreachable: the apex koreabiomed.com opened but 301s to a www
+# host that did not, and www.channelnewsasia.com remains blocked.
 
 defaults:
   adapter: rss
@@ -16,10 +22,17 @@ defaults:
 
 sources:
 
-  # --- Verified live, ready to promote into sources.yaml ------------------
-  # These three parse through sources/rss.py unchanged.
+  # --- PROMOTED into config/sources.yaml on 2026-08-25 --------------------
+  # Kept here as the record of what was measured. annals_sg joined them after
+  # the second sweep. Disabled so the two files do not both claim them.
+  #
+  #   lancet_wpc, lancet_sea, conversation_id_health, annals_sg
+  #
+  # --- Verified live ------------------------------------------------------
+  # These parse through sources/rss.py unchanged.
 
   - key: lancet_wpc
+    enabled: false             # promoted to sources.yaml
     name: The Lancet Regional Health — Western Pacific
     url: https://www.thelancet.com/rssfeed/lanwpc_online.xml
     weight: 1.0
@@ -33,6 +46,7 @@ sources:
       correct either way.
 
   - key: lancet_sea
+    enabled: false             # promoted to sources.yaml
     name: The Lancet Regional Health — Southeast Asia
     url: https://www.thelancet.com/rssfeed/lansea_online.xml
     weight: 1.0
@@ -41,6 +55,7 @@ sources:
     notes: Same shape and same unconfirmed licence as lancet_wpc.
 
   - key: conversation_id_health
+    enabled: false             # promoted to sources.yaml
     name: The Conversation — Indonesia (Kesehatan)
     url: https://theconversation.com/id/kesehatan/articles.atom
     licence: cc                # CC-BY-ND, same as the other editions
@@ -88,6 +103,77 @@ sources:
     sections: [also_reading]
     notes: WordPress with feeds disabled — 500, {"code":"wp_die","message":"No feed available."}
 
+  # --- Second sweep: live, but rejected on review -------------------------
+  # The audience is pre-med and medical-school applicants, and selection
+  # favours ethics, policy, global health and new treatments. Liveness was
+  # never the bar; register is.
+
+  - key: annals_sg
+    name: Annals, Academy of Medicine Singapore
+    url: https://annals.edu.sg/feed/
+    enabled: false
+    licence: cc
+    weight: 1.0
+    sections: [journals, global_health]
+    notes: >
+      PROMOTED to sources.yaml — the find of the second sweep. Singapore's own
+      peer-reviewed journal, CC BY-NC-SA 4.0, full text in-feed, strongly
+      SEA-weighted. ~1 item/week.
+
+  - key: healthcareasia
+    name: Healthcare Asia Magazine
+    url: https://healthcareasiamagazine.com/rss.xml
+    enabled: false
+    weight: 0.7
+    sections: [also_reading, policy]
+    notes: >
+      REJECTED. Live at /rss.xml (not /feed, which 404s): 49 items, ~21/week,
+      the highest volume of anything surveyed. But it is investor and market
+      trade press — urinalysis market sizing, OUE Healthcare's privatisation
+      offer, CKD drug sales forecasts, APAC gastroscope growth rates. Wrong
+      register for interview preparation. The feed is also malformed: the
+      <title> element carries a summary sentence rather than a headline, and
+      summaries are empty, so items would render as a stray fact plus a link.
+
+  - key: medicalchannelasia
+    name: Medical Channel Asia
+    url: https://medicalchannelasia.com/feed/
+    enabled: false
+    weight: 0.7
+    sections: [also_reading, explainer]
+    notes: >
+      REJECTED. Live and well-formed — WordPress, full text (~6,850 chars),
+      ~2.3 items/week, Singapore-based. But it is consumer wellness, not
+      medicine: pickleball injuries, coffee and body fat, dental anxiety.
+      Reconsider if a consumer-health section is ever wanted; it is the best
+      feed of that kind found.
+
+  - key: nus_news
+    name: NUS Newsroom
+    url: https://news.nus.edu.sg/feed/
+    enabled: false
+    weight: 0.5
+    sections: [also_reading]
+    notes: >
+      REJECTED. Live, 25 items, ~19/week — but university-wide PR, not health.
+      One of seven sampled items was health-adjacent; the rest were arbitration
+      centres, edge AI and horseshoe crabs. Same failure mode as the Straits
+      Times: filtering a general feed for health yields almost nothing.
+
+  - key: gnews_sg_health
+    name: Google News — Singapore healthcare query
+    url: https://news.google.com/rss/search?q=Singapore+healthcare+OR+hospital+OR+MOH&hl=en-SG&gl=SG&ceid=SG:en
+    enabled: false
+    weight: 0.4
+    sections: [also_reading]
+    notes: >
+      REJECTED for now, but the most promising fallback if CNA never opens.
+      Works well — 100 items, ~18/week, genuinely on-topic. Two blockers: item
+      links are news.google.com/rss/articles/CBMi… redirects rather than
+      publisher URLs, which breaks the store's canonical-URL identity and
+      would make the digest link to a redirector; and it aggregates the
+      paywalled outlets it surfaces. Would need a URL-resolution step first.
+
   # --- UNVERIFIED: blocked by this session's egress policy, not by the host
   # Enabled so a sweep from an unblocked network actually tests them. Expect
   # this whole block to fail when run from inside a restricted environment.
@@ -115,7 +201,10 @@ sources:
     url: https://www.koreabiomed.com/rss/allArticle.xml
     weight: 0.8
     sections: [also_reading, policy]
-    notes: UNVERIFIED. English-language healthcare trade press for Korea; typical Korean CMS feed path.
+    notes: >
+      UNVERIFIED still. The apex koreabiomed.com was opened in the second
+      sweep but 301s to www.koreabiomed.com, which was not — so every feed
+      path under it still fails at CONNECT. Needs the www host opened too.
 
   - key: healthcareasia
     name: Healthcare Asia Magazine

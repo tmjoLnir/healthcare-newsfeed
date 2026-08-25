@@ -99,11 +99,19 @@ def test_the_shipped_config_loads(tmp_path):
     """The loader and the files it reads have to agree, not just parse."""
     sources = load_sources(CONFIG / "sources.yaml")
 
-    assert len(sources) == 14
+    assert len(sources) == 17
     assert {s.adapter for s in sources} == {"rss", "who_odata"}
     assert next(s for s in sources if s.key == "nature_med").tolerate_failure
     assert next(s for s in sources if s.key == "who_news").licence is Licence.PUBLIC_DOMAIN
     assert next(s for s in sources if s.key == "statnews").paywalled
+
+    # The regional trio is the reason the issue is not entirely UK/US/global,
+    # so it is worth pinning rather than leaving to the count above.
+    regional = {"annals_sg", "lancet_wpc", "lancet_sea"}
+    assert regional <= {s.key for s in sources}
+    assert all("global_health" in s.sections for s in sources if s.key in regional)
+    assert next(s for s in sources if s.key == "annals_sg").licence is Licence.CC_REPUBLISHABLE
+    assert "kesehatan" in next(s for s in sources if s.key == "conversation_id").url
 
     template = load_digest_template(CONFIG / "digest.yaml")
     assert next(s["key"] for s in template["sections"]) == "story_of_week"
