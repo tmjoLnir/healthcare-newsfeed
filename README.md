@@ -517,7 +517,10 @@ with `publish --dry-run` when the question is how the issue reads, and with
 ### Deployment
 
 `.github/workflows/` ships three workflows: `poll` (daily 02:00 UTC / 10:00 SGT),
-`publish` (Sunday 11:00 UTC / 19:00 SGT) and `ci`.
+`publish` (Sunday 11:00 UTC / 19:00 SGT) and `ci`. This section is the reasoning;
+[docs/deployment.md](docs/deployment.md) is the runbook — the ordered steps from
+an unconfigured repository to the first issue landing, and what each failure in
+the logs actually means.
 
 A fresh runner starts with an empty database, which would defeat the whole
 point of polling daily — so **the store outlives the runner** in a GitHub
@@ -602,6 +605,8 @@ tools/
   verify_feeds.py     feed health checker
   store_sync.sh       carry the store between runs via a Release asset
 docs/
+  asia-sources.md     the regional source survey, and what was rejected
+  deployment.md       standing it up: secrets, bootstrap, the first issue
   persistent-store.md store sizing, and the free options that fit it
 tests/                offline, fixture-driven
 ```
