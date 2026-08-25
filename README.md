@@ -368,21 +368,34 @@ with `publish --dry-run` when the question is how the issue reads, and with
 `.github/workflows/` ships three workflows: `poll` (daily 02:00 UTC / 10:00 SGT),
 `publish` (Sunday 11:00 UTC / 19:00 SGT) and `ci`.
 
-One thing to wire up before relying on them: **the store must outlive the
-runner.** A fresh GitHub Actions runner starts with an empty database, which
-defeats the whole point of polling daily.
+A fresh runner starts with an empty database, which would defeat the whole
+point of polling daily — so **the store outlives the runner** in a GitHub
+Release. A prerelease tagged `store` holds one asset, `newsfeed.db.gz`, and
+`tools/store_sync.sh` restores it before each scheduled run and uploads it back
+afterwards. It costs nothing, needs no account beyond this one, and uses no
+secret beyond the `GITHUB_TOKEN` Actions already issues — a year of history is
+about 9 MiB compressed.
 
-A year of history is 28 MiB — about 3 KiB an item, 0.55 MiB a week — so every
-free tier worth considering has years of headroom, and size is not what decides
-this. Durability is: losing the file mid-week loses the issue, because five
-feeds retain less than seven days. Sync the SQLite file to object storage or a
-Release asset (no code change), or move to Turso (a small driver swap —
-`NEWSFEED_DB` is a `Path` today and cannot yet hold a database URL). Avoid
-`actions/cache`, which is evicted after 7 days of disuse and so survives only
-until something interrupts the schedule — silently.
+Start it once, by hand:
 
-[docs/persistent-store.md](docs/persistent-store.md) has the measurements and
-compares the free options.
+```bash
+gh workflow run poll.yml -f bootstrap=true
+```
+
+That flag is the only way an empty store ever gets created. A scheduled run
+that finds no asset **fails instead**, because an empty database and a quiet
+news week are indistinguishable downstream — and one of them publishes. The
+same instinct runs through the rest of it: a poll that fails partway still
+saves what it captured, since those items are already gone from the feeds; a
+store that comes back smaller than it left is refused, since nothing in the
+pipeline deletes rows.
+
+Both workflows share one `concurrency` group, because the file is
+read-modify-write and two overlapping runs would lose whichever finished
+first.
+
+[docs/persistent-store.md](docs/persistent-store.md) has the sizing that
+settled this, the free options that were compared, and how to operate it.
 
 ---
 
@@ -426,6 +439,7 @@ src/healthcare_newsfeed/
   cli.py              poll · build · publish · verify
 tools/
   verify_feeds.py     feed health checker
+  store_sync.sh       carry the store between runs via a Release asset
 docs/
   persistent-store.md store sizing, and the free options that fit it
 tests/                offline, fixture-driven
@@ -444,12 +458,10 @@ tests/                offline, fixture-driven
 - [x] `newsfeed poll`: config loading and the daily run
 - [x] Dedupe, scoring, section selection
 - [x] Telegram rendering and publishing
+- [x] A store that outlives the runner — a GitHub Release asset, sized and
+      chosen in [docs/persistent-store.md](docs/persistent-store.md)
 
 Open, and a judgement call rather than a gap:
 
 - [ ] Decide Singapore coverage — scrape MOH's Isomer pages, or keep relying
       on The Conversation Indonesia as the regional signal
-- [ ] Wire up a store that outlives the runner before trusting the schedules —
-      requirements measured and free options compared in
-      [docs/persistent-store.md](docs/persistent-store.md); the pick is
-      R2 or a Release asset (no code change) against Turso (a small driver swap)

@@ -10,9 +10,20 @@ on:
         type: boolean
         default: false
 
+# Shares the poll's group: publish reads the same file, and a poll landing
+# mid-publish would change the week under it. See poll.yml.
+concurrency:
+  group: newsfeed-store
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      NEWSFEED_DB: data/newsfeed.db
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -21,9 +32,22 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt -e .
 
+      # No bootstrap input on purpose. Publishing is the one command that
+      # must never run against an empty store: it would post an issue built
+      # from nothing, or nothing at all, and record it as sent.
+      - name: Restore the store
+        id: restore
+        run: tools/store_sync.sh restore
+
       - name: Publish weekly issue
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          NEWSFEED_DB: data/newsfeed.db
         run: newsfeed publish ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      # A dry run writes nothing, so there is nothing to push back. A real
+      # publish records the issue and marks its items, and that must survive
+      # even if a later step fails — otherwise next week reruns this issue.
+      - name: Save the store
+        if: always() && steps.restore.outcome == 'success' && inputs.dry_run != true
+        run: tools/store_sync.sh save

@@ -6,10 +6,28 @@ on:
   schedule:
     - cron: "0 2 * * *"      # 02:00 UTC = 10:00 SGT
   workflow_dispatch:
+    inputs:
+      bootstrap:
+        description: "Start an empty store (first run only — see docs/persistent-store.md)"
+        type: boolean
+        default: false
+
+# The store is a single file fetched, mutated and pushed back, so two runs
+# overlapping would lose whichever finished first. Queue instead of cancel:
+# a cancelled run has already committed items to a store it will never
+# upload, and those items are gone from the feeds by the next poll.
+concurrency:
+  group: newsfeed-store
+  cancel-in-progress: false
 
 jobs:
   poll:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write        # upload the store back to its release
+    env:
+      NEWSFEED_DB: data/newsfeed.db
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -18,12 +36,19 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt -e .
 
-      # NOTE: the store must outlive the runner. Options, in rough order of
-      # preference: a hosted Postgres/Turso URL; an S3-synced SQLite file; or
-      # actions/cache, which is evicted after 7 days of disuse and so is only
-      # safe while the daily poll keeps it warm. Wire one up before relying on
-      # this workflow — a fresh runner starts with an empty database.
-      - name: Poll sources
+      - name: Restore the store
+        id: restore
         env:
-          NEWSFEED_DB: data/newsfeed.db
+          STORE_BOOTSTRAP: ${{ inputs.bootstrap }}
+        run: tools/store_sync.sh restore
+
+      - name: Poll sources
         run: newsfeed poll
+
+      # Even when the poll exits non-zero. A failed source does not undo the
+      # thirteen that succeeded, and their items are only in this file —
+      # MedPage and JAMA will have rolled them off by tomorrow. The guards in
+      # store_sync.sh are what make an unconditional save safe.
+      - name: Save the store
+        if: always() && steps.restore.outcome == 'success'
+        run: tools/store_sync.sh save
