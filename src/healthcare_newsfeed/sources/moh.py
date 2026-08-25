@@ -13,7 +13,8 @@ The page is 7.5 MB and the index starts about 4.3% in, ordered newest first,
 so the first 0.5 MB carries roughly four months of it. CloudFront grants that
 range only sometimes — see WINDOW_BYTES — so the adapter reads at most
 MAX_ITEMS records whichever size arrives, and parses a partial and a whole page
-the same way. That cap, not the byte range, is what bounds a poll. Records look like this, embedded in a chunk of escaped JSON:
+the same way. That cap, not the byte range, is what bounds a poll. Records look
+like this, embedded in a chunk of escaped JSON:
 
     {"id":"/newsroom/<slug>","date":"$D2026-08-24T00:00:00.000Z",
      "plaintextTags":[{"category":"Category","selected":["Speeches"]}],
