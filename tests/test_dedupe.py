@@ -1,15 +1,18 @@
-"""Canonical URLs — pass 1 of dedupe.
+"""Both dedupe passes.
 
-The store keys every row on the canonical URL, so these cases decide what
-counts as the same article. Pass 2, `cluster`, lands with the dedupe work
-item; its tests belong here too.
+Pass 1 is `canonical_url`, which the store keys every row on, so those cases
+decide what counts as the same article. Pass 2 is `cluster`, which catches
+the same story told twice — and the cases that matter most are the ones it
+must leave alone, since a false merge silently drops an item from the issue.
 """
 
 from __future__ import annotations
 
+import datetime as dt
+
 import pytest
 
-from healthcare_newsfeed.pipeline.dedupe import canonical_url
+from healthcare_newsfeed.pipeline.dedupe import WINDOW, canonical_url, cluster
 
 # Real shapes from the configured sources, so a publisher changing its
 # tracking scheme shows up here rather than as duplicate items in an issue.
@@ -63,3 +66,136 @@ def test_the_path_is_left_alone():
 @pytest.mark.parametrize("value", ["", "   ", "not a url"])
 def test_junk_is_returned_unchanged(value):
     assert canonical_url(value) == value.strip()
+
+
+# --- pass 2: near-duplicate titles -------------------------------------------
+
+MONDAY = dt.datetime(2026, 8, 24, tzinfo=dt.UTC)
+
+
+def clusters(items) -> list[set[str]]:
+    """The grouping, as sets of titles."""
+    groups: dict[str, set[str]] = {}
+    for item in items:
+        groups.setdefault(item.cluster_id, set()).add(item.title)
+    return sorted(groups.values(), key=len, reverse=True)
+
+
+def test_every_item_lands_in_a_cluster(make_item):
+    items = [make_item("Something"), make_item("Something else entirely")]
+
+    cluster(items)
+
+    assert all(item.cluster_id for item in items)
+    assert len({item.cluster_id for item in items}) == 2
+
+
+def test_the_same_story_from_two_sources_clusters(make_item):
+    """The case the module exists for: one announcement, several outlets."""
+    items = [
+        make_item("WHO declares Ebola outbreak over in the DRC", source="who_news"),
+        make_item("Ebola outbreak declared over in DRC, says WHO", source="bbc_health"),
+    ]
+
+    cluster(items)
+
+    assert items[0].cluster_id == items[1].cluster_id
+
+
+def test_a_journal_and_its_companion_paper_cluster(make_item):
+    """NEJM ran this trial a fortnight before The Lancet's companion piece."""
+    items = [
+        make_item("Phase 3 Trial of Weekly Oral Islatravir\u2013Lenacapavir for HIV-1 Treatment",
+                  source="nejm", published=MONDAY - dt.timedelta(days=14)),
+        make_item("[Articles] Switch to once-weekly, single-tablet islatravir\u2013lenacapavir "
+                  "from daily standard of care for HIV-1 (ISLEND-2): a multicentre, randomised, "
+                  "open-label, active-controlled, phase 3 non-inferiority trial",
+                  source="lancet", published=MONDAY),
+    ]
+
+    cluster(items)
+
+    assert items[0].cluster_id == items[1].cluster_id
+
+
+def test_unrelated_stories_stay_apart(make_item):
+    items = [
+        make_item("Doctors vote to take strike action over pay"),
+        make_item("Continuous glucose monitors have transformed diabetes care"),
+        make_item("Measles cases rise in Bangladesh"),
+    ]
+
+    cluster(items)
+
+    assert len({item.cluster_id for item in items}) == 3
+
+
+def test_a_short_title_does_not_swallow_a_longer_one(make_item):
+    """Every word of a two-word title sits inside plenty of longer ones.
+
+    Containment is what catches a wire headline inside a journal's fuller
+    version, and without a floor on length it would merge "Antiretroviral
+    Therapy" into any article that happened to mention it.
+    """
+    items = [
+        make_item("Antiretroviral Therapy", source="nejm"),
+        make_item("[Comment] Once-weekly oral antiretroviral therapy for HIV", source="lancet"),
+    ]
+
+    cluster(items)
+
+    assert items[0].cluster_id != items[1].cluster_id
+
+
+def test_reports_too_far_apart_are_separate_stories(make_item):
+    items = [
+        make_item("Measles - Bangladesh", published=MONDAY),
+        make_item("Measles - Bangladesh", published=MONDAY - WINDOW - dt.timedelta(days=1)),
+    ]
+
+    cluster(items)
+
+    assert items[0].cluster_id != items[1].cluster_id
+
+
+def test_serial_reports_on_one_outbreak_chain_together(make_item):
+    """WHO files these every week or two; the issue should carry one."""
+    items = [
+        make_item("Ebola disease caused by Bundibugyo virus - Democratic Republic of the Congo",
+                  source="who_dons", published=MONDAY - dt.timedelta(days=step))
+        for step in (0, 13, 26)
+    ]
+
+    cluster(items)
+
+    assert len({item.cluster_id for item in items}) == 1
+
+
+def test_the_cluster_is_named_after_its_lowest_member(make_item):
+    """So the same week's candidates produce the same issue on a rerun."""
+    first = make_item("Ebola outbreak declared over in the DRC", item_id="item0002")
+    second = make_item("Ebola outbreak in DRC declared over", item_id="item0001")
+
+    cluster([first, second])
+    forwards = first.cluster_id
+    cluster([second, first])
+
+    assert forwards == first.cluster_id == second.cluster_id == "item0001"
+
+
+def test_undated_items_fall_back_to_when_they_were_stored(make_item):
+    """WHO news items carry no publication date at all."""
+    items = [
+        make_item("Ebola outbreak declared over in the DRC", published=None, first_seen=MONDAY),
+        make_item("Ebola outbreak in the DRC declared over", published=None, first_seen=MONDAY),
+    ]
+
+    cluster(items)
+
+    assert items[0].cluster_id == items[1].cluster_id
+
+
+def test_cluster_returns_the_same_list(make_item):
+    items = [make_item("A study")]
+
+    assert cluster(items) is items

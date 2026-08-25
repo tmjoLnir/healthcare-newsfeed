@@ -18,9 +18,16 @@ class Adapter(Protocol):
     Adapters do no deduplication, scoring or filtering — they only translate
     an upstream format into RawItem. Network and parse errors are raised;
     the caller decides whether one dead source fails the run.
+
+    Each holds a connection pool, so a caller polling several sources is
+    expected to close the adapter when it is done — `HttpSource` below
+    implements both this and the context-manager form.
     """
 
     def fetch(self, source: Source) -> list[RawItem]:
+        ...
+
+    def close(self) -> None:
         ...
 
 

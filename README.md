@@ -8,9 +8,11 @@ pre-med and medical-school applicants, so selection favours what actually helps
 at interview — ethics, health policy, global health and new treatments — over
 breaking-news volume.
 
-> **Status: half-built.** Source verification, the feed checker, both adapters
-> and the store work today — all fourteen sources fetch and persist. The
-> selection pipeline and publishing are specified stubs. See [Roadmap](#roadmap).
+> **Status: nearly there.** `newsfeed poll` and `newsfeed build` work end to
+> end — all fourteen sources fetch and persist daily, and a week's candidates
+> cluster, rank and fill the issue's sections. Only rendering and posting to
+> Telegram remain, so `publish` says so rather than pretending. See
+> [Roadmap](#roadmap).
 
 ---
 
@@ -92,6 +94,25 @@ weight, topic fit, durability (explainers hold their value across a week;
 breaking news does not, and is penalised accordingly), cluster size and
 readability. `pipeline/select.py` then fills each section under its quota,
 never repeating an item carried by an earlier issue.
+
+Each signal is a small named function with a documented range, and the weights
+at the top of `score.py` are the whole tuning surface. That matters more than
+sophistication: when an issue carries the wrong story, the only useful question
+is which signal put it there.
+
+`pipeline/dedupe.py` runs first. Its exact pass — canonical URLs — already
+happens on every insert; the near pass groups titles that tell one story
+within three weeks of each other. Three weeks reads generous for a weekly
+digest, and the sources argue for it: WHO files a fresh report on the same
+outbreak every week or two, and NEJM ran one HIV trial a fortnight before The
+Lancet's companion paper. Narrower, and an issue carries the same epidemic
+twice. Allocation then takes one item per cluster, so the rest of that story
+cannot come back in another section.
+
+Sections are filled in two passes over the template — each gets its `min`
+before any gets its second choice. One pass would let an early greedy section
+take an item a later thin one was relying on, which is the crowding-out the
+per-section quotas exist to prevent.
 
 ---
 
@@ -224,10 +245,40 @@ It exits non-zero if an enabled source fails, so it can gate a deployment.
 | Command | Effect |
 |---|---|
 | `newsfeed poll` | Fetch every due source into the store. Run daily. |
-| `newsfeed build` | Assemble the current issue without posting. |
-| `newsfeed publish --dry-run` | Render the issue to stdout. |
-| `newsfeed publish` | Post the weekly issue to Telegram. |
+| `newsfeed verify` | Check feed health (wraps `tools/verify_feeds.py`). |
+| `newsfeed build` | Assemble the issue for a week and print it. Writes nothing. |
+| `newsfeed publish` | *Not built yet* — needs `digest/render.py`, `telegram.py`. |
 | `python tools/verify_feeds.py` | Check feed health. |
+
+```
+$ newsfeed poll
+SOURCE             STATUS   FETCHED  NEW  DETAIL
+------------------------------------------------
+statnews           ok            20   20
+bbc_health         ok            52   50
+nejm               blocked        -    -  nejm: HTTP 403
+nature_med         failed         -    -  nature_med: HTTP 500  (tolerated)
+who_dons           skip           -    -  polled 6.2h ago, every 24h
+
+12/14 sources polled, 318 new items, 1 not yet due
+```
+
+`--only KEY…` polls named sources, `--force` ignores `poll_hours`, `--dry-run`
+fetches without writing, and `--db` overrides `$NEWSFEED_DB`.
+
+**A dead source does not stop the others, but it does colour the exit code.**
+The split is the one `verify_feeds.py` already makes: a 401/403/429 is the host
+refusing this particular egress address — NEJM does it to Actions runners — so
+it is reported and tolerated, while a 404 or an unparseable response is the
+source being broken and fails the run, because a daily schedule that quietly
+stops collecting looks exactly like a quiet week. `--strict` fails on blocks
+too; `tolerate_failure: true` on a source keeps a known-flaky host out of the
+exit code entirely.
+
+Due-ness comes from `poll_hours` against the store's record of when each source
+last succeeded, so a run repeated within the day is nearly free. A *failed*
+poll does not start that clock — a broken source is retried on the next run
+rather than waiting out its interval.
 
 ### Deployment
 
@@ -275,7 +326,7 @@ config/
 src/healthcare_newsfeed/
   models.py           Source, RawItem, Item, Section, Digest, Licence
   config.py           YAML loading and validation
-  store.py            SQLite persistence
+  store.py            SQLite persistence (items · issues · polls)
   sources/            base.py (protocol) · rss.py · who.py
   pipeline/           dedupe.py · score.py · select.py
   digest/             template.py · render.py
@@ -296,7 +347,7 @@ tests/                offline, fixture-driven
 - [x] RSS/Atom adapter — all three feed formats
 - [x] SQLite store — canonical-URL identity, weekly window
 - [x] WHO OData adapter — both collections
-- [ ] `newsfeed poll`: config loading and the daily run
-- [ ] Dedupe, scoring, section selection
+- [x] `newsfeed poll`: config loading and the daily run
+- [x] Dedupe, scoring, section selection
 - [ ] Telegram rendering and publishing
 - [ ] Decide Singapore coverage — scrape MOH, or rely on The Conversation ID

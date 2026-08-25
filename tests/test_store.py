@@ -181,3 +181,50 @@ def test_the_store_outlives_the_process_that_wrote_it(tmp_path):
 def test_item_id_is_derived_from_the_canonical_url():
     assert item_id("https://x.test/a") == item_id("https://x.test/a")
     assert item_id("https://x.test/a") != item_id("https://x.test/b")
+
+
+# --- the poll log ------------------------------------------------------------
+
+def test_a_successful_poll_is_recorded(store):
+    store.record_poll("bbc_health", status="ok", fetched=52, added=50)
+
+    row = store.conn.execute("SELECT * FROM polls").fetchone()
+    assert (row["source_key"], row["status"], row["fetched"], row["added"]) == \
+        ("bbc_health", "ok", 52, 50)
+    assert store.last_successful_poll("bbc_health") is not None
+
+
+def test_a_source_never_polled_has_no_last_success(store):
+    assert store.last_successful_poll("bbc_health") is None
+
+
+def test_a_failure_does_not_clear_the_last_success(store):
+    """poll_hours is measured from the last success, so a failing source
+    stays due and is retried on the next run instead of waiting it out."""
+    store.record_poll("bbc_health", status="ok", fetched=52, added=50)
+    succeeded_at = store.last_successful_poll("bbc_health")
+
+    store.record_poll("bbc_health", status="failed", detail="HTTP 500")
+
+    assert store.last_successful_poll("bbc_health") == succeeded_at
+    row = store.conn.execute("SELECT * FROM polls").fetchone()
+    assert row["status"] == "failed"
+    assert row["detail"] == "HTTP 500"
+
+
+def test_a_source_that_has_never_succeeded_stays_without_one(store):
+    store.record_poll("nejm", status="blocked", detail="HTTP 403")
+
+    assert store.last_successful_poll("nejm") is None
+
+
+def test_each_source_keeps_one_row(store):
+    for _ in range(3):
+        store.record_poll("bbc_health", status="ok", fetched=1, added=1)
+
+    assert store.conn.execute("SELECT count(*) FROM polls").fetchone()[0] == 1
+
+
+def test_an_unknown_status_is_rejected(store):
+    with pytest.raises(ValueError, match="unknown poll status"):
+        store.record_poll("bbc_health", status="probably-fine")

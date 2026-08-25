@@ -34,6 +34,7 @@ class Source:
     paywalled: bool = False
     poll_hours: int = 24
     enabled: bool = True
+    tolerate_failure: bool = False   # a flaky host must not fail the whole poll
 
 
 @dataclass
