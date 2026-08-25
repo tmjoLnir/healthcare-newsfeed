@@ -605,6 +605,7 @@ tools/
   verify_feeds.py     feed health checker
   store_sync.sh       carry the store between runs via a Release asset
 docs/
+  asia-sources.md     the regional source survey, and what was rejected
   deployment.md       standing it up: secrets, bootstrap, the first issue
   persistent-store.md store sizing, and the free options that fit it
 tests/                offline, fixture-driven
