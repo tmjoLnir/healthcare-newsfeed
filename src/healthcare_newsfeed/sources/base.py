@@ -1,4 +1,4 @@
-"""Adapter protocol, and the HTTP plumbing both adapters share."""
+"""Adapter protocol, and the HTTP plumbing every adapter shares."""
 
 from __future__ import annotations
 
@@ -94,14 +94,21 @@ class HttpSource:
             self._client = default_client()
         return self._client
 
-    def get(self, url: str, key: str, params: dict | None = None) -> httpx.Response:
-        """GET one source, reporting any failure as FeedError."""
+    def get(self, url: str, key: str, params: dict | None = None,
+            headers: dict | None = None) -> httpx.Response:
+        """GET one source, reporting any failure as FeedError.
+
+        `headers` adds to the shared set for adapters that need a request of
+        their own shape — MOH asks for a byte range rather than the 7.5 MB
+        page. A 206 is a success like any other 2xx.
+        """
         try:
             # Headers, timeout and redirects go on the request, not the
             # client: a caller sharing one connection pool across the poll
             # would otherwise fetch as python-httpx, which is enough on its
             # own to get a challenge page from several of these publishers.
-            response = self.client.get(url, params=params, headers=HEADERS,
+            response = self.client.get(url, params=params,
+                                       headers=HEADERS | (headers or {}),
                                        timeout=TIMEOUT, follow_redirects=True)
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:

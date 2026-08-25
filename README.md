@@ -2,13 +2,13 @@
 
 A weekly healthcare-news digest for aspiring doctors, published to a Telegram channel.
 
-Seventeen sources are polled daily, deduplicated and ranked; once a week the best
+Eighteen sources are polled daily, deduplicated and ranked; once a week the best
 dozen items are assembled into a structured issue and posted. The audience is
 pre-med and medical-school applicants, so selection favours what actually helps
 at interview — ethics, health policy, global health and new treatments — over
 breaking-news volume.
 
-> **Status: complete end to end.** All seventeen sources fetch and persist
+> **Status: complete end to end.** All eighteen sources fetch and persist
 > daily, a week's candidates cluster, rank and fill the issue's sections, and
 > `newsfeed publish` renders the issue and posts it to the channel. Preview
 > any week with `newsfeed publish --dry-run`, which needs no bot token. What
@@ -157,7 +157,7 @@ went to a Lancet comment and a MedPage summary while the WHO outbreak report
 
 ## Sources
 
-Seventeen sources, all verified reachable on 2026-08-25.
+Eighteen sources, all verified reachable on 2026-08-25.
 
 | Source | Format | Items/week | Summary text | Licence |
 |---|---|---|---|---|
@@ -176,6 +176,7 @@ Seventeen sources, all verified reachable on 2026-08-25.
 | Nature Medicine | RSS 1.0 | 8 | 359 ch | link only · paywalled |
 | BMJ Journal of Medical Ethics | RSS 2.0 | 0-2 | 5,376 ch | link only |
 | KFF Health News | RSS 2.0 | 10 | 6,862 ch | **CC, republishable** |
+| MOH Singapore | Next.js page | ~11 | none | link only |
 | WHO — News | OData JSON | ~6 | none | public domain |
 | WHO — Disease Outbreak News | OData JSON | ~1 | 1,251 ch | public domain |
 
@@ -186,7 +187,7 @@ section in place of its edition-wide feed. Annals is the one source whose
 licence is neither CC-BY-ND nor link-only — CC-BY-NC-SA carries a share-alike
 term, so it would need downgrading to link_only if the channel ever monetised.
 
-Three others need handling that differs from the rest:
+Four others need handling that differs from the rest:
 
 **WHO publishes no usable RSS.** Every documented feed path returns 404, and the
 one URL that still resolves is abandoned — 25 items spanning over a year. Live
@@ -208,6 +209,29 @@ archives rather than windows, so `$top` without the ordering returns an
 arbitrary page: unordered, the first three records came back dated 2017, 2020
 and 2016. The adapter therefore checks the ordering it asked for actually took
 effect, rather than storing a decade-old backlog as though it were this week.
+
+**MOH publishes no feed, and does not need one.** `/rss`, `/feed.xml` and
+`/newsroom/rss.xml` all 404 — the site runs on Isomer Next. But the newsroom
+listing page embeds its whole 8,367-item index in the Next.js flight payload,
+newest first, each record carrying a real publication date, a category and a
+title. The index begins 4.3% into a 7.5 MB page and is ordered newest first, so
+the poller asks for the first 500 KB of it — about six months of history.
+
+That range is an optimisation rather than a contract. MOH sits behind
+CloudFront, which answers a cache hit with the whole page and no
+`Accept-Ranges`: eight consecutive requests measured on 2026-08-25 all returned
+200 and 7.5 MB, where the same request had returned 206 earlier that day. So
+the adapter reads at most the newest 200 records whichever size arrives, parses
+a partial page and a whole one identically, and the daily transfer swings
+between 0.5 MB and 7.5 MB depending on the cache. Handled by `sources/moh.py`.
+
+Two things follow. MOH sets headlines in capitals, which would shout among
+every other source's sentence case, so the adapter recases them — best-effort,
+since capitalising the source destroyed the difference between an acronym and
+an ordinary word. And items carry no summary at all: the index has none, and
+MOH's [Terms of Use](https://www.moh.gov.sg/terms-of-use/) forbid reproducing
+site contents without written permission, so the body text on the item pages is
+deliberately left alone. MOH items render as title and link, like WHO news.
 
 **NEJM supplies no summary, and blocks datacenter IPs.** Its feed carries an
 87-character citation string where the description belongs, so NEJM items render
@@ -235,19 +259,17 @@ Documented so they are not retried in good faith:
 |---|---|
 | **The BMJ** | Cloudflare returns 429/403 to datacenter IPs; `feeds.bmj.com` fails TLS; *BMJ Opinion* has been dead since January 2022 |
 | **Medscape** | Cloudflare bot challenge |
-| **MOH Singapore** | No RSS — the site runs on Isomer; every feed path 404s. But see below: the newsroom index is readable without one |
 | **NUS Medicine** | WordPress with feeds disabled — 500, `{"code":"wp_die","message":"No feed available."}` |
 | **Duke-NUS** | Host reachable again as of 2026-08-25, but no feed exists at any path |
 | **LKC Medicine NTU** | Gateway 502 |
 
-Singapore-institution coverage has **no RSS path at all** — four sources, four
-different failure modes. MOH is nonetheless reachable: its newsroom page embeds
-a complete 8,367-item index with real publication dates, and the host honours
-byte ranges, so one 0.5 MB request reads four months of it. That plus the two
-Lancet regional titles and The Conversation's Indonesian *health* feed are
-surveyed, measured and costed in [docs/asia-sources.md](docs/asia-sources.md);
-[`config/candidates-asia.yaml`](config/candidates-asia.yaml) re-runs the sweep
-in one command.
+Singapore *institutions* have no RSS path at all — three schools, three failure
+modes. MOH is the exception, and it is a configured source: it publishes no feed
+either, but `sources/moh.py` reads its newsroom index out of the rendered
+page (see below).
+[docs/asia-sources.md](docs/asia-sources.md) has the survey the regional sources
+came out of, and [`config/candidates-asia.yaml`](config/candidates-asia.yaml)
+re-runs the sweep in one command.
 
 BMJ blocks datacenter IPs outright, and NEJM does the same to GitHub Actions
 runners — so expect some publishers to treat any shared egress address this way.
@@ -390,7 +412,7 @@ SOURCE             HTTP  ITEMS NEWEST       7D  CHARS  VERDICT
 statnews           200      20 2026-08-24   20    700  ok — 6d window, daily poll required
 medpage            200      20 2026-08-24   20    247  ok — 3d window, daily poll required
 ...
-17/17 sources healthy
+18/18 sources healthy
 ```
 
 It exits non-zero if an enabled source fails, so it can gate a deployment.
@@ -415,7 +437,7 @@ nejm               blocked        -    -  nejm: HTTP 403
 nature_med         failed         -    -  nature_med: HTTP 500  (tolerated)
 who_dons           skip           -    -  polled 6.2h ago, every 24h
 
-15/17 sources polled, 318 new items, 1 not yet due
+16/18 sources polled, 318 new items, 1 not yet due
 ```
 
 `--only KEY…` polls named sources, `--force` ignores `poll_hours`, `--dry-run`
@@ -525,7 +547,7 @@ changing either:
 
 ```
 config/
-  sources.yaml        17 sources: weights, sections, licences, retention data
+  sources.yaml        18 sources: weights, sections, licences, retention data
   digest.yaml         section order, headings, per-section quotas
 src/healthcare_newsfeed/
   models.py           Source, RawItem, Item, Section, Digest, Licence
@@ -559,6 +581,8 @@ tests/                offline, fixture-driven
 - [x] Telegram rendering and publishing
 - [x] A store that outlives the runner — a GitHub Release asset, sized and
       chosen in [docs/persistent-store.md](docs/persistent-store.md)
+- [x] An MOH adapter — no feed exists, so `sources/moh.py` reads the newsroom
+      index out of the page's Next.js payload, capped at the newest 200 records
 - [x] Singapore and Asia coverage decided and shipped — Annals plus the two
       Lancet regional titles, and The Conversation Indonesia moved to its
       health section. Surveyed, measured and costed in
@@ -567,11 +591,6 @@ tests/                offline, fixture-driven
 
 Open, and judgement calls rather than gaps:
 
-- [ ] An MOH adapter. No feed exists, but the newsroom page embeds a complete
-      8,367-item index and the host honours byte ranges, so one 0.5 MB request
-      reads four months of it — `tools/moh_newsroom_probe.py` demonstrates it.
-      About 1.5 usable items a week, `link_only`. Worth checking MOH resolves
-      from an Actions runner before building it; two sources already do not
 - [ ] Egress that reaches NEJM, Annals and CNA. Two configured sources are
       blocked from Actions runners today, and CNA — the one Singapore
       general-news outlet with per-section RSS, unpaywalled — could not be

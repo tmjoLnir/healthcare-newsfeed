@@ -169,6 +169,31 @@ sources:
     sections: [policy, also_reading]
     retention_days: 6
 
+  # --- Singapore official (no feed at all; see sources/moh.py) -------------
+  - key: moh_sg
+    name: MOH Singapore
+    url: https://www.moh.gov.sg/newsroom/
+    adapter: moh_newsroom
+    weight: 1.0                # the health ministry of the audience's own country
+    sections: [policy, also_reading]
+    retention_days: 170        # verified: 200 records, the adapter's cap
+    notes: >
+      No feed exists — /rss, /feed.xml and /newsroom/rss.xml all 404. The
+      newsroom page embeds its whole 8,367-item index in a Next.js flight
+      payload, and the poller asks for the first 0.5 MB of it. CloudFront
+      grants that range only sometimes and answers a cache hit with the whole
+      7.5 MB, so the daily transfer swings between the two; the adapter reads
+      the newest 200 records either way. Titles are published in capitals and are recased on
+      the way in; items carry no summary, because the index has none and
+      MOH's Terms of Use forbid reproducing the body text the item pages
+      carry — so these render as title and link, like WHO news items.
+
+      Volume is about 11 items a week overall, but that is dominated by
+      Parliamentary QA arriving in bursts on sitting days; the steady part
+      is Press Releases and Forum Replies, roughly 1.5 a week. The first
+      poll ingests the whole window at once — about 170 days at 200 records —
+      and recency() decays it, exactly as it does bbc_health's 126 days.
+
   # --- Official (public domain, JSON not RSS) ------------------------------
   - key: who_news
     name: WHO — News

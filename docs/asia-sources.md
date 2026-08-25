@@ -79,10 +79,16 @@ publication date, a category and a title:
 ```
 
 The full page is 7.5 MB, but the index begins 4.3% in and is sorted
-newest-first, and the host honours byte ranges. A `Range: bytes=0-500000`
-request returns `206` and recovers the **175 most recent items** — 139 days of
-history in 0.5 MB, against 225 MB/month for naive daily full fetches.
-`tools/moh_newsroom_probe.py` demonstrates this and prints what a poll would see.
+newest-first, so a `Range: bytes=0-500000` request recovers the most recent
+~175 items — around four months of history — in a fifteenth of the transfer.
+
+**The range is not reliable, which the survey got wrong.** MOH sits behind
+CloudFront, and a cache hit is answered with the whole page and no
+`Accept-Ranges`: eight consecutive requests on 2026-08-25 all came back 200 and
+7.5 MB, where the same request had returned 206 earlier the same day. The
+adapter therefore treats the range as an optimisation and the item cap as the
+contract — newest 200 records, whichever size arrives.
+`tools/moh_newsroom_probe.py` reports which of the two actually happened.
 
 ### Volume
 
@@ -100,18 +106,34 @@ issue the stream that matters is Press Releases plus Forum Replies, about 1.5
 items a week. That is exactly the shape of a `min: 0` section: present most
 weeks, absent without padding when Parliament is quiet.
 
-### What the adapter has to do
+### What the adapter does
+
+Built as `sources/moh.py`, registered as the `moh_newsroom` adapter.
 
 1. `GET https://www.moh.gov.sg/newsroom/` with `Range: bytes=0-500000`. The
    final `self.__next_f.push([1,"…"])` chunk is cut mid-string, so the parser
-   must tolerate an unterminated tail rather than anchoring on `"])`.
-2. Decode the flight payload (`unicode_escape`) and read the `"items":[…]`
-   array; keep records inside the poll window.
-3. Titles are **ALL CAPS** in the index and need title-casing before rendering.
-4. `description` is empty for every item — the index carries no summary. Item
-   pages do: they are server-rendered, and carry the category, the date in prose
-   ("19 August 2026") and the full body text. So a summary costs one extra fetch
-   per new item, which at ~1.5 items a week is nothing.
+   ends on the last complete unit instead of anchoring on `"])` — and rejects a
+   `"])` that turns out to be an escaped quote inside a string, which would
+   otherwise silently drop every record after it.
+2. Decode each chunk **as a JSON string, not with `unicode_escape`**. That was
+   the one real trap: `unicode_escape` round-trips through latin-1 and turns
+   every multi-byte character into mojibake — 2,210 corrupted bytes on the live
+   page. The first version of `tools/moh_newsroom_probe.py` had this bug; the
+   probe now drives the adapter, so there is one parser rather than two.
+3. Read records one at a time from the first `"items":[`, since the byte range
+   leaves the array unclosed — parsing it whole would fail on every real fetch.
+4. Recase the titles, which MOH sets in capitals. Best-effort: capitalising the
+   source destroyed the acronym information, so `A&E`, `MOH`, `CHAS`,
+   `MediSave` and friends are restored from a list and everything else comes
+   back as ordinary title case. A headline that is not all capitals is left
+   untouched, so it is a no-op if MOH ever changes house style.
+5. Emit no summary. `description` is blank for every record, and MOH's Terms of
+   Use forbid reproducing site contents, so the full body text on the item
+   pages is deliberately not fetched. Items render as title and link, like WHO
+   news items.
+
+`tools/verify_feeds.py` checks it too, through the same adapter — a gate that
+tested something other than what the poller does would not be one.
 
 ### Licence
 
@@ -294,13 +316,11 @@ either sweep replaces it.
 2. ~~Point `conversation_id` at the `kesehatan` feed~~ — **done.** URL changed,
    key kept so stored items keep their source.
 3. ~~Add `annals_sg`~~ — **done**, after the second sweep. Weight 1.0, `cc`.
-4. **Build the MOH adapter** — still open. ~1.5 usable items a week, 0.5 MB a
-   day, `link_only`. It is the only route to Singapore-institution coverage
-   that exists, and it closes the open roadmap item.
+4. ~~Build the MOH adapter~~ — **done.** `sources/moh.py`, ~11 items a week
+   overall and ~1.5 of the steady kind, `link_only`, newest 200 records a poll.
 5. **Get `www.channelnewsasia.com` and `www.koreabiomed.com` opened**, then
    re-run `config/candidates-asia.yaml`. CNA is the one gap neither sweep
-   filled.
+   filled, and the only outstanding item on this survey.
 
-The config is now at seventeen sources, all verified reachable, with the
-regional trio carrying Asia. Step 4 is a new adapter alongside `sources/who.py`
-and remains a judgement call rather than a gap.
+The config is now at eighteen sources, all verified reachable, with the
+regional four carrying Asia and Singapore.

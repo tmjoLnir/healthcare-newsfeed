@@ -264,9 +264,9 @@ sources:
     notes: UNVERIFIED.
 
 # No feed path exists (checked 2026-08-25) — these need an adapter, not a URL:
-#   moh.gov.sg   /rss, /feed.xml, /newsroom/rss.xml all 404. The newsroom page
-#                embeds the full 8,367-item index in its Next.js flight
-#                payload, readable in one 0.5 MB Range request. See
+#   moh.gov.sg   /rss, /feed.xml, /newsroom/rss.xml all 404 — now a configured
+#                source all the same: sources/moh.py reads the 8,367-item index
+#                out of the newsroom page's Next.js payload. See
 #                docs/asia-sources.md and tools/moh_newsroom_probe.py.
 #
 # No regional split available:

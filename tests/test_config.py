@@ -17,7 +17,7 @@ from healthcare_newsfeed.models import Licence
 
 CONFIG = Path(__file__).resolve().parents[1] / "config"
 VALID_LICENCES = {"public_domain", "cc", "link_only"}
-VALID_ADAPTERS = {"rss", "who_odata"}
+VALID_ADAPTERS = {"rss", "who_odata", "moh_newsroom"}
 
 
 @pytest.fixture(scope="module")
@@ -99,8 +99,8 @@ def test_the_shipped_config_loads(tmp_path):
     """The loader and the files it reads have to agree, not just parse."""
     sources = load_sources(CONFIG / "sources.yaml")
 
-    assert len(sources) == 17
-    assert {s.adapter for s in sources} == {"rss", "who_odata"}
+    assert len(sources) == 18
+    assert {s.adapter for s in sources} == {"rss", "who_odata", "moh_newsroom"}
     assert next(s for s in sources if s.key == "nature_med").tolerate_failure
     assert next(s for s in sources if s.key == "who_news").licence is Licence.PUBLIC_DOMAIN
     assert next(s for s in sources if s.key == "statnews").paywalled
@@ -112,6 +112,10 @@ def test_the_shipped_config_loads(tmp_path):
     assert all("global_health" in s.sections for s in sources if s.key in regional)
     assert next(s for s in sources if s.key == "annals_sg").licence is Licence.CC_REPUBLISHABLE
     assert "kesehatan" in next(s for s in sources if s.key == "conversation_id").url
+
+    # MOH has no feed; it is the one source read out of a rendered page.
+    moh = next(s for s in sources if s.key == "moh_sg")
+    assert (moh.adapter, moh.licence) == ("moh_newsroom", Licence.LINK_ONLY)
 
     template = load_digest_template(CONFIG / "digest.yaml")
     assert next(s["key"] for s in template["sections"]) == "story_of_week"

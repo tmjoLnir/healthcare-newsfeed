@@ -33,6 +33,17 @@ preserving when refreshing them:
   because those sections are large; keep them, since leaving them out would
   stop the fixture proving they are ignored.
 
+* `moh_newsroom_partial.html` is the odd one out: a trimmed capture rather
+  than a whole response, because the whole response is 7.5 MB. It keeps the
+  first six index records verbatim, cuts the seventh mid-object, and never
+  closes its `self.__next_f.push([1,"…` chunk — which is exactly what a
+  byte-ranged fetch of MOH looks like, and the property the adapter is built
+  around. It also opens with a chunk containing a literal `"])` inside a
+  string, so a naive split on the terminator would silently drop every record
+  after it. Rebuild it from a live `Range: bytes=0-500000` response: keep the
+  `self.__next_f.push([1,"` chunk that contains `\"items\":[`, cut it a couple
+  of hundred characters into the seventh record, and drop the closing `"])`.
+
 Refresh by re-fetching the URL above with the browser User-Agent from
 `tools/verify_feeds.py`, then dropping the trailing entries. The WHO endpoints
 need `?$orderby=PublicationDateAndTime%20desc&$top=20`; without it they return
