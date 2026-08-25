@@ -1,6 +1,6 @@
 # Healthcare Newsfeed
 
-A weekly healthcare-news digest for aspiring doctors, published to a Telegram channel.
+A weekly healthcare-news digest for aspiring doctors, delivered as a Telegram DM.
 
 Eighteen sources are polled daily, deduplicated and ranked; once a week the best
 dozen items are assembled into a structured issue and posted. The audience is
@@ -10,7 +10,7 @@ breaking-news volume.
 
 > **Status: complete end to end.** All eighteen sources fetch and persist
 > daily, a week's candidates cluster, rank and fill the issue's sections, and
-> `newsfeed publish` renders the issue and posts it to the channel. Preview
+> `newsfeed publish` renders the issue and sends it to the chat. Preview
 > any week with `newsfeed publish --dry-run`, which needs no bot token. What
 > is left is a judgement call rather than a gap — see [Roadmap](#roadmap).
 
@@ -198,7 +198,8 @@ Three of them are the regional signal, added after the survey in
 two Lancet regional titles, joined by The Conversation's Indonesian *health*
 section in place of its edition-wide feed. Annals is the one source whose
 licence is neither CC-BY-ND nor link-only — CC-BY-NC-SA carries a share-alike
-term, so it would need downgrading to link_only if the channel ever monetised.
+term, so it would need downgrading to link_only if the digest were ever
+monetised.
 
 Four others need handling that differs from the rest:
 
@@ -424,9 +425,21 @@ pip install -r requirements.txt -e ".[dev]"
 cp .env.example .env      # then fill in the two Telegram values
 ```
 
-Create the bot with [@BotFather](https://t.me/botfather), add it to your channel
-as an administrator with *Post messages* permission, and put the token and
-channel name in `.env`.
+Create the bot with [@BotFather](https://t.me/botfather), then open the chat
+that should receive the digest and send the bot `/start`. **A bot cannot write
+to a chat that has not written to it first**, and the chat id is a number
+rather than an `@name`, so read it back from the bot's own updates:
+
+```bash
+curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getUpdates" \
+  | jq '.result[-1].message.chat.id'
+```
+
+Put that number and the token in `.env`. Nothing here needs a channel or
+administrator rights — the digest goes to one chat, which is all a single
+reader needs; the same two variables would address a group or a channel
+unchanged if that ever changes. The scheduled publish reads them as the
+repository secrets `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`.
 
 Check every source is reachable before doing anything else:
 
@@ -487,11 +500,11 @@ rather than waiting out its interval.
 ```
 $ newsfeed publish
 This Week in Medicine — Issue 12: 14 of 173 candidates, 2 message(s)
-issue 12 published to @channel: 2 message(s), 14 items recorded
+issue 12 published to chat 987654321: 2 message(s), 14 items recorded
 ```
 
 `--dry-run` renders the issue to stdout and posts nothing — it needs no bot
-token, so it works before the channel exists. `--week` publishes a past week,
+token, so it works before the bot exists. `--week` publishes a past week,
 `--issue` overrides the numbering, and `--config`, `--template` and `--db`
 behave as they do for `build`.
 

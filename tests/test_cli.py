@@ -329,12 +329,12 @@ def stock_store(db_path: str, count: int = len(STORIES)) -> None:
 
 
 @pytest.fixture
-def channel(monkeypatch):
+def chat(monkeypatch):
     """Capture what publish would post, in place of the real client."""
     posted: list[str] = []
 
     class FakeClient:
-        chat_id = "@test_channel"
+        chat_id = "987654321"
         fail_on: ClassVar[int | None] = None
 
         def send(self, text, *, parse_mode="HTML", disable_preview=False):
@@ -353,21 +353,21 @@ def channel(monkeypatch):
     return FakeClient
 
 
-def test_publish_posts_the_issue_and_records_it(publishable, db, channel, capsys):
+def test_publish_posts_the_issue_and_records_it(publishable, db, chat, capsys):
     stock_store(db)
 
     assert main(["publish", "--config", publishable(), "--db", db]) == 0
 
-    assert len(channel.posted) == 1
-    assert "This Week in Medicine" in channel.posted[0]
-    assert "issue 1 published to @test_channel" in capsys.readouterr().out
+    assert len(chat.posted) == 1
+    assert "This Week in Medicine" in chat.posted[0]
+    assert "issue 1 published to chat 987654321" in capsys.readouterr().out
     with Store(db) as store:
         assert store.next_issue() == 2
         assert store.conn.execute(
             "SELECT count(*) FROM items WHERE published_in_issue = 1").fetchone()[0] > 0
 
 
-def test_a_published_item_is_never_carried_again(publishable, db, channel):
+def test_a_published_item_is_never_carried_again(publishable, db, chat):
     """select() excludes what an earlier issue carried; publish is what records it.
 
     One eligible section, so its `max` of 6 leaves candidates over for a
@@ -377,11 +377,11 @@ def test_a_published_item_is_never_carried_again(publishable, db, channel):
     config_path = publishable("also_reading")
     stock_store(db)
     main(["publish", "--config", config_path, "--db", db])
-    first = _linked(channel.posted)
+    first = _linked(chat.posted)
 
-    channel.posted.clear()
+    chat.posted.clear()
     main(["publish", "--config", config_path, "--db", db])
-    second = _linked(channel.posted)
+    second = _linked(chat.posted)
 
     assert first and second
     assert not first & second
@@ -392,37 +392,37 @@ def _linked(messages: list[str]) -> set[str]:
     return set(re.findall(r"https://bbc\.test/\d+", "\n".join(messages)))
 
 
-def test_a_dry_run_prints_the_issue_without_posting_or_recording(publishable, db, channel,
+def test_a_dry_run_prints_the_issue_without_posting_or_recording(publishable, db, chat,
                                                                  capsys):
     stock_store(db)
 
     assert main(["publish", "--config", publishable(), "--db", db, "--dry-run"]) == 0
 
     out = capsys.readouterr().out
-    assert not channel.posted
+    assert not chat.posted
     assert "This Week in Medicine" in out and "nothing was posted" in out
     with Store(db) as store:
         assert store.next_issue() == 1                                     # not recorded
 
 
-def test_a_partial_post_records_nothing(publishable, db, channel, capsys, monkeypatch):
+def test_a_partial_post_records_nothing(publishable, db, chat, capsys, monkeypatch):
     """Recording a half-posted issue would retire the items that never arrived.
 
-    A duplicate is visible in the channel and a human can delete it; an item
+    A duplicate is visible in the chat and a human can delete it; an item
     silently retired from every future issue is neither visible nor
     recoverable. So the store is written only once the whole burst lands.
     """
     stock_store(db)
     monkeypatch.setattr("healthcare_newsfeed.cli.render",
                         lambda *a, **k: ["message one", "message two", "message three"])
-    channel.fail_on = 2
+    chat.fail_on = 2
 
     assert main(["publish", "--config", publishable(), "--db", db]) == 1
 
     error = capsys.readouterr().err
     assert "failed on message 2 of 3" in error
     assert "was NOT recorded" in error and "re-run will repost" in error
-    assert channel.posted == ["message one"]
+    assert chat.posted == ["message one"]
     with Store(db) as store:
         assert store.next_issue() == 1
         assert store.conn.execute(
@@ -430,9 +430,9 @@ def test_a_partial_post_records_nothing(publishable, db, channel, capsys, monkey
 
 
 def test_a_failure_on_the_first_message_does_not_warn_about_duplicates(publishable, db,
-                                                                       channel, capsys):
+                                                                       chat, capsys):
     stock_store(db)
-    channel.fail_on = 1
+    chat.fail_on = 1
 
     assert main(["publish", "--config", publishable(), "--db", db]) == 1
 
@@ -440,11 +440,11 @@ def test_a_failure_on_the_first_message_does_not_warn_about_duplicates(publishab
     assert "failed on message 1" in error and "already went out" not in error
 
 
-def test_publish_says_so_when_the_store_is_empty(publishable, db, channel, capsys):
+def test_publish_says_so_when_the_store_is_empty(publishable, db, chat, capsys):
     assert main(["publish", "--config", publishable(), "--db", db]) == 1
 
     assert "has `newsfeed poll` run?" in capsys.readouterr().err
-    assert not channel.posted
+    assert not chat.posted
 
 
 def test_publish_reports_missing_credentials_rather_than_traceback(publishable, db,
@@ -458,7 +458,7 @@ def test_publish_reports_missing_credentials_rather_than_traceback(publishable, 
     assert "BotFather" in capsys.readouterr().err
 
 
-def test_publish_takes_the_issue_number_it_is_given(publishable, db, channel):
+def test_publish_takes_the_issue_number_it_is_given(publishable, db, chat):
     stock_store(db)
 
     assert main(["publish", "--config", publishable(), "--db", db, "--issue", "42"]) == 0

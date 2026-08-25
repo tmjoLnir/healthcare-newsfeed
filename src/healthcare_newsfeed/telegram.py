@@ -1,10 +1,11 @@
 """Telegram Bot API client.
 
-Only needs sendMessage against a channel the bot administers. Messages cap
-at 4096 characters, so digests arrive as an ordered burst rather than one
-message — see digest/render.py.
+Only needs sendMessage against the one chat that reads the digest — a direct
+message from the bot, so there is no channel to create and no administrator
+rights to grant. Messages cap at 4096 characters, so digests arrive as an
+ordered burst rather than one message — see digest/render.py.
 
-Two things shape the rest of this module.
+Three things shape the rest of this module.
 
 **The token is in the URL.** api.telegram.org authenticates by path, not by
 header, so any error that quotes a URL leaks the bot's credentials into CI
@@ -17,6 +18,12 @@ that fails on its fourth message leaves an issue posted with its ethics
 section missing and no way to append. Retrying transient failures matters
 more here than failing fast; what cannot be retried is reported precisely
 enough for `newsfeed publish` to say how much went out.
+
+**A DM has a precondition a channel does not.** A bot cannot open a
+conversation — the reader has to message it first — and the chat id is a
+number rather than an @name. Getting either wrong comes back as an
+unretryable Forbidden or Bad Request whose description names the condition
+and stops there, so SETUP_HINTS supplies the step that fixes it.
 """
 
 from __future__ import annotations
@@ -46,10 +53,32 @@ MAX_ATTEMPTS = 4
 FALLBACK_RETRY_AFTER = 5.0
 MAX_RETRY_AFTER = 60.0        # a longer wait than a publish run should sit through
 
-# Telegram's per-chat ceiling is around 20 messages a minute; a digest is a
-# handful, so a small gap keeps a burst under the limit rather than
+# Telegram meters messages to a single chat at roughly one a second; a digest
+# is a handful, so a small gap keeps a burst under the limit rather than
 # discovering it through a 429 halfway down the issue.
 MIN_GAP = 1.0
+
+# The three ways a valid token still cannot reach a DM. Telegram names the
+# condition and stops there, and none of them is worth a retry, so each is
+# paired with the setup step that fixes it. Matched against the description
+# it sends back, lowercased.
+SETUP_HINTS = (
+    ("can't initiate conversation",
+     "open the chat and send the bot /start — a bot cannot message first"),
+    ("bot was blocked",
+     "the chat has blocked the bot; unblock it and send /start again"),
+    ("chat not found",
+     f"{CHAT_VAR} should be the chat's numeric id, not a @username — see .env.example"),
+)
+
+
+def _hint(description: str) -> str:
+    """The setup step a rejection points at, if it points at one."""
+    lowered = description.lower()
+    for fragment, hint in SETUP_HINTS:
+        if fragment in lowered:
+            return f" ({hint})"
+    return ""
 
 
 def length(text: str) -> int:
@@ -92,8 +121,8 @@ class TelegramClient:
         if missing:
             raise ConfigError(
                 f"{' and '.join(missing)} not set — create the bot with @BotFather, "
-                f"add it to the channel as an administrator with 'Post messages', "
-                f"and see .env.example"
+                f"send it /start from the chat that should receive the digest, "
+                f"and see .env.example for how to read that chat's id"
             )
         return cls(token, chat_id, **kwargs)
 
@@ -170,7 +199,7 @@ class TelegramClient:
         wait = (body.get("parameters") or {}).get("retry_after")
         if response.status_code == 429:
             return {}, float(wait or FALLBACK_RETRY_AFTER)
-        raise TelegramError(f"HTTP {response.status_code}: {description}",
+        raise TelegramError(f"HTTP {response.status_code}: {description}{_hint(description)}",
                             status=response.status_code)
 
     def _pace(self) -> None:
