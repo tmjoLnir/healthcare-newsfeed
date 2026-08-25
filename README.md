@@ -8,8 +8,9 @@ pre-med and medical-school applicants, so selection favours what actually helps
 at interview — ethics, health policy, global health and new treatments — over
 breaking-news volume.
 
-> **Status: scaffolding.** Configuration, source verification and the feed checker
-> work today. The pipeline modules are specified stubs. See [Roadmap](#roadmap).
+> **Status: half-built.** Source verification, the feed checker, the RSS/Atom
+> adapter and the store work today; the WHO adapter, the selection pipeline and
+> publishing are specified stubs. See [Roadmap](#roadmap).
 
 ---
 
@@ -243,7 +244,18 @@ ruff check .
 Feed samples in `tests/fixtures/` are captured responses, so the suite needs no
 network and stays stable when a publisher changes its output. The configured set
 spans RSS 1.0 (RDF), RSS 2.0, Atom and OData JSON — keep at least one fixture per
-format.
+format; `tests/fixtures/README.md` records where each came from.
+
+Two rules the adapter and store divide between them, worth knowing before
+changing either:
+
+- **`RawItem` is the item as found.** The adapter strips markup and normalises
+  dates, and nothing else — tracking parameters included. Ranking and licence
+  limits happen later, so an adapter that filtered would remove evidence the
+  pipeline needs.
+- **The store's identity is the canonical URL**, from `pipeline/dedupe.py`.
+  Inserts are append-only: a re-poll never rewrites `first_seen`, or the item
+  captured on Monday would slide into next week's issue.
 
 ### Layout
 
@@ -272,8 +284,10 @@ tests/                offline, fixture-driven
 - [x] Source research and live verification
 - [x] Feed health checker
 - [x] Source and digest configuration
-- [ ] RSS and WHO OData adapters
-- [ ] SQLite store and daily poll
+- [x] RSS/Atom adapter — all three feed formats
+- [x] SQLite store — canonical-URL identity, weekly window
+- [ ] WHO OData adapter
+- [ ] `newsfeed poll`: config loading and the daily run
 - [ ] Dedupe, scoring, section selection
 - [ ] Telegram rendering and publishing
 - [ ] Decide Singapore coverage — scrape MOH, or rely on The Conversation ID

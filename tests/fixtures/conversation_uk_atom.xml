@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xml:lang="en-US" xmlns="http://www.w3.org/2005/Atom" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+  <id>tag:theconversation.com,2011:/uk/health/articles</id>
+  <link rel="alternate" type="text/html" href="https://theconversation.com"/>
+  <link rel="self" type="application/atom+xml" href="https://theconversation.com/uk/health/articles.atom"/>
+  <title>Health – The Conversation</title>
+  <updated>2026-08-24T14:24:38Z</updated>
+  <entry>
+    <id>tag:theconversation.com,2011:article/289335</id>
+    <published>2026-08-24T14:24:38Z</published>
+    <updated>2026-08-24T14:24:38Z</updated>
+    <link rel="alternate" type="text/html" href="https://theconversation.com/the-brain-has-its-own-thermostat-study-shows-epilepsy-may-interfere-with-it-289335"/>
+    <title>The brain has its own thermostat – study shows epilepsy may interfere with it</title>
+    <content type="html">&lt;figure&gt;&lt;img src="https://images.theconversation.com/files/755737/original/file-20260824-50-sier1e.jpg?ixlib=rb-4.1.1&amp;amp;rect=0%2C1%2C6720%2C4480&amp;amp;q=45&amp;amp;auto=format&amp;amp;w=1050&amp;amp;h=700&amp;amp;fit=crop" /&gt;&lt;figcaption&gt;&lt;span class="caption"&gt;&lt;/span&gt; &lt;span class="attribution"&gt;&lt;a class="source" href="https://download.shutterstock.com/gatekeeper/W3siZCI6ICJzaHV0dGVyc3RvY2stbWVkaWEiLCAiayI6ICJwaG90by8yMTUwMDg4MTUzL2h1Z2UuanBnIiwgImRjIjogImlkbF8xMjMiLCAiZSI6IDE3ODc2MDc0NDQsICJtIjogMX0sICJYNXFKOVZYaFZ4UENocnBJdFEra3I0dWlyZHciXQ==/shutterstock_2150088153.jpg"&gt;New Africa/Shutterstock&lt;/a&gt;&lt;/span&gt;&lt;/figcaption&gt;&lt;/figure&gt;&lt;p&gt;Doctors have long known that changes in &lt;a href="https://theconversation.com/topics/body-temperature-29637"&gt;body temperature&lt;/a&gt; can affect seizure activity. Fever can &lt;a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC2766556/"&gt;trigger seizures in some young children&lt;/a&gt;, while in rare forms of epilepsy, bathing in hot water &lt;a href="https://onlinelibrary.wiley.com/doi/full/10.1002/epd2.20029"&gt;can bring on a seizure&lt;/a&gt;. Raised body temperature can also trigger seizures in &lt;a href="https://www.nature.com/articles/s41467-026-69957-1"&gt;Dravet syndrome&lt;/a&gt;, a rare form of epilepsy that usually begins in infancy and is particularly sensitive to fever and overheating.&lt;/p&gt;
+
+&lt;p&gt;Temperature may also move in the other direction. &lt;a href="https://pubmed.ncbi.nlm.nih.gov/10612331/"&gt;Earlier animal studies&lt;/a&gt; found that &lt;a href="https://theconversation.com/topics/epilepsy-3271"&gt;epilepsy&lt;/a&gt; can alter daily temperature rhythms and affect nerve cells in the hypothalamus, the part of the brain that helps regulate body temperature. &lt;/p&gt;
+
+&lt;p&gt;In &lt;a href="https://onlinelibrary.wiley.com/doi/10.1002/epi.70453"&gt;our new research&lt;/a&gt;, our team, based in Italy, Ireland, the UK and the Netherlands, investigated how early these changes begin, what might be happening in the brain’s temperature-control centres and whether similar changes can be seen in people with epilepsy.&lt;/p&gt;
+
+&lt;p&gt;The brain has its own thermostat. The brain is metabolically active and can be &lt;a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC4189373/"&gt;slightly warmer than the rest of the body&lt;/a&gt;, although the difference varies between brain regions and over the course of the day. Deep in the brain, the hypothalamus coordinates many of the body’s responses to heat and cold. &lt;a href="https://www.pnas.org/doi/10.1073/pnas.1616255114"&gt;Different parts of the hypothalamus&lt;/a&gt; help balance heat loss and heat production to keep temperature within a narrow range.&lt;/p&gt;
+
+&lt;p&gt;Using mice in which we had induced a condition &lt;a href="https://onlinelibrary.wiley.com/doi/10.1111/epi.18151"&gt;resembling temporal lobe epilepsy&lt;/a&gt; in humans, we combined specialised MRI measurements of temperature in the hippocampus with continuous recordings of body temperature and electrical activity in the brain. Temporal lobe epilepsy is a common form of the condition that begins in the temporal lobe.&lt;/p&gt;
+
+&lt;h2&gt;Temperature changes begin early&lt;/h2&gt;
+
+&lt;p&gt;We found that temperature in the hippocampus was already higher three days &lt;a href="https://onlinelibrary.wiley.com/doi/10.1111/epi.18151"&gt;after the initial brain injury&lt;/a&gt; used to produce epilepsy in the mice. Crucially, this happened before the first seizures appeared. The higher temperature then persisted after epilepsy was established.&lt;/p&gt;
+
+&lt;figure class="align-center "&gt;
+            &lt;img alt="Close up of hand holding a blue pen points to the right hippocampus in a detailed coronal T2-weighted brain MRI." src="https://images.theconversation.com/files/755721/original/file-20260824-50-msgpr0.jpg?ixlib=rb-4.1.1&amp;amp;q=45&amp;amp;auto=format&amp;amp;w=754&amp;amp;fit=clip" srcset="https://images.theconversation.com/files/755721/original/file-20260824-50-msgpr0.jpg?ixlib=rb-4.1.1&amp;amp;q=45&amp;amp;auto=format&amp;amp;w=600&amp;amp;h=400&amp;amp;fit=crop&amp;amp;dpr=1 600w, https://images.theconversation.com/files/755721/original/file-20260824-50-msgpr0.jpg?ixlib=rb-4.1.1&amp;amp;q=30&amp;amp;auto=format&amp;amp;w=600&amp;amp;h=400&amp;amp;fit=crop&amp;amp;dpr=2 1200w, https://images.theconversation.com/files/755721/original/file-20260824-50-msgpr0.jpg?ixlib=rb-4.1.1&amp;amp;q=15&amp;amp;auto=format&amp;amp;w=600&amp;amp;h=400&amp;amp;fit=crop&amp;amp;dpr=3 1800w, https://images.theconversation.com/files/755721/original/file-20260824-50-msgpr0.jpg?ixlib=rb-4.1.1&amp;amp;q=45&amp;amp;auto=format&amp;amp;w=754&amp;amp;h=503&amp;amp;fit=crop&amp;amp;dpr=1 754w, https://images.theconversation.com/files/755721/original/file-20260824-50-msgpr0.jpg?ixlib=rb-4.1.1&amp;amp;q=30&amp;amp;auto=format&amp;amp;w=754&amp;amp;h=503&amp;amp;fit=crop&amp;amp;dpr=2 1508w, https://images.theconversation.com/files/755721/original/file-20260824-50-msgpr0.jpg?ixlib=rb-4.1.1&amp;amp;q=15&amp;amp;auto=format&amp;amp;w=754&amp;amp;h=503&amp;amp;fit=crop&amp;amp;dpr=3 2262w" sizes="(min-width: 1466px) 754px, (max-width: 599px) 100vw, (min-width: 600px) 600px, 237px"&gt;
+            &lt;figcaption&gt;
+              &lt;span class="caption"&gt;The hippocampus, a brain region involved in memory, is often where seizures begin or spread in temporal lobe epilepsy.&lt;/span&gt;
+              &lt;span class="attribution"&gt;&lt;a class="source" href="https://www.shutterstock.com/image-photo/exploring-hippocampus-abrain-mri-neurology-brain-2391170017?trackingId=9a472ff3-3ab5-416a-8ac6-5925b9bb4d11&amp;amp;listId=searchResults"&gt;FocalFinder/Shutterstock&lt;/a&gt;&lt;/span&gt;
+            &lt;/figcaption&gt;
+          &lt;/figure&gt;
+
+&lt;p&gt;That timing suggests the change cannot simply be explained by the heat generated by repeated seizures. We also found that &lt;a href="https://zenodo.org/records/20072687"&gt;body temperature rose around individual seizures&lt;/a&gt;, with the increase beginning before the seizure itself.&lt;/p&gt;
+
+&lt;p&gt;These observations show that temperature and seizure activity are closely linked, but they cannot tell us what is causing what. Rising temperature might make a seizure more likely, developing seizure activity might itself raise temperature, or both could reflect changes in the same brain networks.&lt;/p&gt;
+
+&lt;p&gt;When we examined the hypothalamus in mice with epilepsy, &lt;a href="https://onlinelibrary.wiley.com/doi/10.1111/epi.18151"&gt;we found fewer nerve cells&lt;/a&gt; in two regions involved in temperature regulation. The reduction was roughly one-fifth when compared with mice without epilepsy. We also saw inflammation, altered activity in surviving cells and reduced volume &lt;a href="https://zenodo.org/records/20072687"&gt;in part of the hypothalamus&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;We then looked for related changes in people. In &lt;a href="https://zenodo.org/records/20072687"&gt;brain scans from hundreds of people with epilepsy&lt;/a&gt;, corresponding parts of the hypothalamus were smaller than in people without the condition. The differences were most marked in people whose epilepsy was associated with visible damage or other changes in the brain.&lt;/p&gt;
+
+&lt;p&gt;The human scans cannot show whether the same cell loss or inflammation seen in mice is present in people, and smaller brain regions do not by themselves prove that temperature regulation is impaired. But finding changes in similar regions in mice and people gives us a reason to investigate the connection further.&lt;/p&gt;
+
+&lt;p&gt;We also found &lt;a href="https://onlinelibrary.wiley.com/doi/10.1002/epi.70453"&gt;changes in thyroid hormones in the mice&lt;/a&gt;. The pattern suggested disruption somewhere along the chain of hormonal signals running from the brain to the thyroid gland, rather than allowing us to pinpoint the problem in one particular part of the system.&lt;/p&gt;
+
+&lt;p&gt;Taken together, the findings raise the possibility that epilepsy that develops after injury or other changes in the brain can affect some of the networks involved in keeping temperature stable. They do not yet show that disrupted temperature control causes seizures, or that seizures progressively damage these brain regions.&lt;/p&gt;
+
+&lt;h2&gt;What could this mean in hotter weather?&lt;/h2&gt;
+
+&lt;p&gt;Our study did not expose people with epilepsy to extreme heat or test whether hot weather increases their seizure risk. So it cannot tell us whether people with epilepsy as a group are less able to cope with heat.&lt;/p&gt;
+
+&lt;p&gt;There are, however, reasons to investigate the question. &lt;a href="https://academic.oup.com/braincomms/article/6/5/fcae269/7748968"&gt;In a small 2024 London study&lt;/a&gt;, researchers compared brain recordings from nine people with drug-resistant epilepsy during heatwaves and cooler periods. During heatwaves, three participants had significantly more abnormal electrical discharges between seizures. Five had more seizures, and seizure numbers were higher across the group overall. Other research has also reported associations between environmental heat and &lt;a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12090581/"&gt;epilepsy-related outcomes&lt;/a&gt;, although the evidence is still limited.&lt;/p&gt;
+
+&lt;p&gt;Our results offer one possible explanation to test. If the brain’s temperature-control system is altered in some forms of epilepsy, hot weather could potentially make seizures more likely in people whose ability to regulate temperature is already affected. That has not yet been shown.&lt;/p&gt;
+
+&lt;p&gt;By looking at which genes were more or less active &lt;a href="https://onlinelibrary.wiley.com/doi/10.1002/epi.70453"&gt;in the affected brain regions&lt;/a&gt;, we also found changes involving inflammation and tissue repair. We then used computer analysis to identify existing medicines that might act on some of those biological processes. These are only leads for future research. They now need to be tested in experiments before we know whether they could affect seizures or temperature control.&lt;/p&gt;
+
+&lt;p&gt;For now, the findings suggest that changes in temperature regulation may be an overlooked feature of epilepsy.. The next step is to find out whether the changes seen in the brain affect how people with epilepsy regulate temperature and respond to heat. With climate change increasing concern about the effects of extreme temperatures on people with conditions &lt;a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9386889/"&gt;affecting the brain and nervous system&lt;/a&gt;, that is an increasingly important question to answer.&lt;/p&gt;&lt;img src="https://counter.theconversation.com/content/289335/count.gif" alt="The Conversation" width="1" height="1" /&gt;
+&lt;p class="fine-print"&gt;&lt;em&gt;&lt;span&gt;David Henshall receives funding from Research Ireland and industry partners, Higher Education Authority Ireland, Enterprise Ireland, European Union, for epilepsy research. &lt;/span&gt;&lt;/em&gt;&lt;/p&gt;&lt;p class="fine-print"&gt;&lt;em&gt;&lt;span&gt;Annamaria Vezzani and Rossella Di Sapia do not work for, consult, own shares in or receive funding from any company or organisation that would benefit from this article, and have disclosed no relevant affiliations beyond their academic appointment.&lt;/span&gt;&lt;/em&gt;&lt;/p&gt;</content>
+    <summary>New research suggests epilepsy may alter the brain systems that regulate temperature, raising questions about how patients respond to heat.</summary>
+    <author>
+      <name>David Henshall, Professor Physiology and Medical Physics and Director of FutureNeuro, the Research Ireland Centre for Translational Brain Sciences, hosted at RCSI University of Medicine and Health Sciences, RCSI University of Medicine and Health Sciences</name>
+      <foaf:homepage rdf:resource="https://theconversation.com/profiles/david-henshall-2751804"/>
+    </author>
+    <author>
+      <name>Annamaria Vezzani, Head of the Laboratory of Experimental Neurology, Department of Neuroscience, Mario Negri Institute for Pharmacological Research IRCCS </name>
+      <foaf:homepage rdf:resource="https://theconversation.com/profiles/annamaria-vezzani-2754022"/>
+    </author>
+    <author>
+      <name>Rossella Di Sapia, Researcher Acute Brain and Cardiovascular Injury, Laboratory of Epilepsy and Therapeutic Strategies, Mario Negri Institute for Pharmacological Research IRCCS </name>
+      <foaf:homepage rdf:resource="https://theconversation.com/profiles/rossella-di-sapia-2754036"/>
+    </author>
+    <rights>Licensed as Creative Commons – attribution, no derivatives.</rights>
+  </entry>
+  <entry>
+    <id>tag:theconversation.com,2011:article/289862</id>
+    <published>2026-08-24T13:53:22Z</published>
+    <updated>2026-08-24T13:53:22Z</updated>
+    <link rel="alternate" type="text/html" href="https://theconversation.com/the-physical-activity-paradox-not-all-forms-of-exercise-lower-your-dementia-risk-this-type-raises-it-289862"/>
+    <title>The physical activity paradox: not all forms of exercise lower your dementia risk – this type raises it</title>
+    <content type="html">&lt;figure&gt;&lt;img src="https://images.theconversation.com/files/754828/original/file-20260819-50-lg8rvg.jpg?ixlib=rb-4.1.1&amp;amp;rect=0%2C1%2C7192%2C4794&amp;amp;q=45&amp;amp;auto=format&amp;amp;w=1050&amp;amp;h=700&amp;amp;fit=crop" /&gt;&lt;figcaption&gt;&lt;span class="caption"&gt;&lt;/span&gt; &lt;span class="attribution"&gt;&lt;a class="source" href="https://www.shutterstock.com/image-photo/couple-walking-adorable-beagle-dog-park-2675549441?trackingId=f877a1fc-d7ec-41b7-9b2d-72248f3b8694&amp;amp;listId=searchResults"&gt;New Africa/Shutterstock.com&lt;/a&gt;&lt;/span&gt;&lt;/figcaption&gt;&lt;/figure&gt;&lt;p&gt;Not all physical activity is equal when it comes to protecting the brain from dementia. Where and why we move may matter more than most people realise.&lt;/p&gt;
+
+&lt;p&gt;A large new review of studies published in &lt;a href="https://www.thelancet.com/journals/lanpub/article/PIIS2468-2667(26)00142-8/fulltext"&gt;The Lancet Public Health&lt;/a&gt; found that leisure-time physical activity – such as sport, dancing or going to the gym – was linked to a 24% lower risk of dementia. Housework was linked to a 15% lower risk, although this finding came from just one study. &lt;/p&gt;
+
+&lt;p&gt;Occupational physical activity, on the other hand, was linked to a 20% increased risk of dementia.&lt;/p&gt;
+
+&lt;p&gt;The study compiled data from 74 studies involving more than 4.2 million people in 30 countries, making it one of the largest studies of its kind.&lt;/p&gt;
+
+&lt;h2&gt;Brain protection is well established&lt;/h2&gt;
+
+&lt;p&gt;Physical activity may protect the brain in several ways. It improves blood flow, helping to deliver oxygen and nutrients to the brain. It also causes muscles to release &lt;a href="https://www.frontiersin.org/journals/endocrinology/articles/10.3389/fendo.2023.1106529/full"&gt;molecules&lt;/a&gt; that can reduce inflammation, help the brain use energy and encourage the growth of new brain cells.&lt;/p&gt;
+
+&lt;p&gt;That is one reason why reducing physical inactivity is a key part of the World Health Organization’s recently updated &lt;a href="https://www.who.int/news/item/15-07-2026-new-who-guidelines--up-to-45--of-dementia-risk-could-be-prevented-or-delayed"&gt;dementia prevention guidelines&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;There is plenty of evidence that being active can help protect against dementia. A &lt;a href="https://helpdementia.com/the-uk-biobank-data-showing-that-even-moderate-physical-activity-cuts-dementia-risk-significantly/"&gt;UK Biobank study&lt;/a&gt; tracked people’s activity using wearable devices for four years. Even less than 35 minutes of moderate-to-vigorous activity a week was linked to a 41% lower risk of dementia compared with no such activity.&lt;/p&gt;
+
+&lt;p&gt;More vigorous exercise – the kind that leaves you too breathless to talk – was linked to a 63% lower risk of dementia compared with being inactive.&lt;/p&gt;
+
+&lt;p&gt;Meanwhile, the &lt;a href="https://www.sciencedirect.com/science/article/abs/pii/S0022395621004088"&gt;English Longitudinal Study of Ageing&lt;/a&gt; followed people for 17 years and found that the more active people were, the lower their risk of dementia. The most active group had about half the risk of the least active group.&lt;/p&gt;
+
+&lt;p&gt;Walking &lt;a href="https://www.nature.com/articles/s43856-025-01130-z"&gt;outdoors&lt;/a&gt; – even as little as &lt;a href="https://jamanetwork.com/journals/jamaneurology/fullarticle/2795819"&gt;two miles a day&lt;/a&gt; – and &lt;a href="https://pubmed.ncbi.nlm.nih.gov/16411871"&gt;gardening&lt;/a&gt; have also both been linked to a 25 to 36% lower risk of dementia.&lt;/p&gt;
+
+&lt;p&gt;But the new Lancet study suggests that physical activity at work or while travelling to work may not offer the same protection. It may even be linked to a higher risk of developing dementia.&lt;/p&gt;
+
+&lt;h2&gt;Physical activity paradox&lt;/h2&gt;
+
+&lt;p&gt;Physical activity at work, based on the combined data from five studies, was linked to a 20% higher risk. And active commuting, such as walking or cycling, based on just two studies, was linked to a 10% higher risk.&lt;/p&gt;
+
+&lt;p&gt;Researchers call this the “physical activity paradox”. It is well documented in heart disease research: physical activity at work fails to deliver the same protective effect as the same activity done during leisure time, and can sometimes increase risk instead. Several explanations have been proposed.&lt;/p&gt;
+
+&lt;p&gt;People in physically demanding jobs may have had fewer opportunities for education than people in office jobs. Education and mentally stimulating activities throughout life are linked to greater &lt;a href="https://www.thelancet.com/journals/laneur/article/PIIS1474-4422%5C%2812%5C%2970191-6/abstract"&gt;reserve capacity&lt;/a&gt; in the brain – its ability to cope with damage and keep working normally.&lt;/p&gt;
+
+&lt;figure class="align-center "&gt;
+            &lt;img alt="Person laying bricks." src="https://images.theconversation.com/files/754831/original/file-20260819-69-pq2xal.jpg?ixlib=rb-4.1.1&amp;amp;q=45&amp;amp;auto=format&amp;amp;w=754&amp;amp;fit=clip" srcset="https://images.theconversation.com/files/754831/original/file-20260819-69-pq2xal.jpg?ixlib=rb-4.1.1&amp;amp;q=45&amp;amp;auto=format&amp;amp;w=600&amp;amp;h=400&amp;amp;fit=crop&amp;amp;dpr=1 600w, https://images.theconversation.com/files/754831/original/file-20260819-69-pq2xal.jpg?ixlib=rb-4.1.1&amp;amp;q=30&amp;amp;auto=format&amp;amp;w=600&amp;amp;h=400&amp;amp;fit=crop&amp;amp;dpr=2 1200w, https://images.theconversation.com/files/754831/original/file-20260819-69-pq2xal.jpg?ixlib=rb-4.1.1&amp;amp;q=15&amp;amp;auto=format&amp;amp;w=600&amp;amp;h=400&amp;amp;fit=crop&amp;amp;dpr=3 1800w, https://images.theconversation.com/files/754831/original/file-20260819-69-pq2xal.jpg?ixlib=rb-4.1.1&amp;amp;q=45&amp;amp;auto=format&amp;amp;w=754&amp;amp;h=503&amp;amp;fit=crop&amp;amp;dpr=1 754w, https://images.theconversation.com/files/754831/original/file-20260819-69-pq2xal.jpg?ixlib=rb-4.1.1&amp;amp;q=30&amp;amp;auto=format&amp;amp;w=754&amp;amp;h=503&amp;amp;fit=crop&amp;amp;dpr=2 1508w, https://images.theconversation.com/files/754831/original/file-20260819-69-pq2xal.jpg?ixlib=rb-4.1.1&amp;amp;q=15&amp;amp;auto=format&amp;amp;w=754&amp;amp;h=503&amp;amp;fit=crop&amp;amp;dpr=3 2262w" sizes="(min-width: 1466px) 754px, (max-width: 599px) 100vw, (min-width: 600px) 600px, 237px"&gt;
+            &lt;figcaption&gt;
+              &lt;span class="caption"&gt;Not all physical activity is equal.&lt;/span&gt;
+              &lt;span class="attribution"&gt;&lt;a class="source" href="https://www.shutterstock.com/image-photo/industrial-bricklayer-laying-bricks-on-cement-2252334497?trackingId=929ce904-89d6-49b5-8a7d-e60ef094e84e&amp;amp;listId=searchResults"&gt;Irene Miller/Shutterstock.com&lt;/a&gt;&lt;/span&gt;
+            &lt;/figcaption&gt;
+          &lt;/figure&gt;
+
+&lt;p&gt;Manual workers may also be more likely to work in polluted environments, such as factories or building sites. And commuting, particularly by bicycle or on foot, can mean greater &lt;a href="https://journals.plos.org/plosmedicine/article?id=10.1371/journal.pmed.1004912"&gt;exposure to air pollution&lt;/a&gt;. Air pollution has separately been linked to a higher risk of Alzheimer’s disease.&lt;/p&gt;
+
+&lt;p&gt;Recreational exercise accounts for just 4% of active time in low-income countries, but 28% in high- and middle-income &lt;a href="https://www.sciencedaily.com/releases/2026/07/260713000753.htm"&gt;countries&lt;/a&gt;. So differences in income may shape the factors that influence dementia risk around the world.&lt;/p&gt;
+
+&lt;p&gt;The researchers say more research is needed, particularly in low-income countries, to understand what is behind the link between physical activity at work and dementia.&lt;/p&gt;
+
+&lt;p&gt;Not all physically demanding jobs are the same. Two physically demanding jobs can involve similar amounts of activity but very different exposures to noise, pollution, stress, heat and other hazards.&lt;/p&gt;
+
+&lt;p&gt;These findings point to a deeper inequality: leisure time itself is a resource – one that isn’t distributed evenly. People in low-income countries and those who do physically demanding jobs often have the least opportunity for the kind of activity that seems to protect the brain, while facing the working conditions that may undermine it. Understanding and addressing that imbalance may matter as much for dementia prevention as encouraging people to move more.&lt;/p&gt;&lt;img src="https://counter.theconversation.com/content/289862/count.gif" alt="The Conversation" width="1" height="1" /&gt;
+&lt;p class="fine-print"&gt;&lt;em&gt;&lt;span&gt;Eef Hogervorst works for Loughborough University National Centre for Sports and Exercise Medicine. She has received funding from many funders including NIHR, ESRC, UKRI, British Council Newton Trust to investigate exercise and physical activity to reduce dementia risk.&lt;/span&gt;&lt;/em&gt;&lt;/p&gt;</content>
+    <summary>A major new study of 4.2 million people found leisure exercise cuts dementia risk – but manual labour and active commuting may raise it.</summary>
+    <author>
+      <name>Eef Hogervorst, Professor of Biological Psychology, Loughborough University</name>
+      <foaf:homepage rdf:resource="https://theconversation.com/profiles/eef-hogervorst-1283596"/>
+    </author>
+    <rights>Licensed as Creative Commons – attribution, no derivatives.</rights>
+  </entry>
+  <entry>
+    <id>tag:theconversation.com,2011:article/290101</id>
+    <published>2026-08-24T11:46:46Z</published>
+    <updated>2026-08-24T11:46:46Z</updated>
+    <link rel="alternate" type="text/html" href="https://theconversation.com/alexandria-ocasio-cortez-is-freezing-her-eggs-heres-what-to-consider-if-youre-thinking-of-doing-the-same-290101"/>
+    <title>Alexandria Ocasio-Cortez is freezing her eggs – here’s what to consider if you’re thinking of doing the same</title>
+    <content type="html">&lt;figure&gt;&lt;img src="https://images.theconversation.com/files/755672/original/file-20260824-50-h157zx.jpg?ixlib=rb-4.1.1&amp;amp;rect=0%2C0%2C4552%2C3034&amp;amp;q=45&amp;amp;auto=format&amp;amp;w=1050&amp;amp;h=700&amp;amp;fit=crop" /&gt;&lt;figcaption&gt;&lt;span class="caption"&gt;The US congresswoman has been documenting her journey on social media.&lt;/span&gt; &lt;span class="attribution"&gt;&lt;a class="source" href="https://www.shutterstock.com/image-photo/u-s-representative-alexandria-ocasiocortez-attends-2328973379?trackingId=66b0ce7e-66f8-4bba-88c9-5c7d0ed0269d&amp;amp;listId=searchResults"&gt;lev radin/ Shutterstock&lt;/a&gt;&lt;/span&gt;&lt;/figcaption&gt;&lt;/figure&gt;&lt;p&gt;US congresswoman Alexandria Ocasio-Cortez revealed that, at 36, she has &lt;a href="https://www.bbc.co.uk/news/articles/cewrzrekwv5o"&gt;decided to freeze her eggs&lt;/a&gt;. In an online social media video, Ocasio-Cortez said she chose to go through the process in order to “feel more in control of my life.” She also said that she was going to document her journey to open up conversations about fertility and normalise the process.&lt;/p&gt;
+
+&lt;p&gt;Ocasio-Cortez’s decision reflects a broader trend that is already taking place. The latest report from the Royal College of Obstetricians and Gynaecologists shows an &lt;a href="https://www.rcog.org.uk/guidance/browse-all-guidance/scientific-impact-papers/elective-egg-freezing-for-non-medical-reasons-scientific-impact-paper-no-63/"&gt;increasing number of UK women&lt;/a&gt; are turning to “social” or “elective” egg freezing.&lt;/p&gt;
+
+&lt;p&gt;&lt;/p&gt;
+
+&lt;p&gt;The report notes that the number of egg freezing cycles (the medical process of producing and collecting eggs) being undertaken each year has trebled between 2016 and 2021. The technology is now the fastest growing fertility treatment in the UK.&lt;/p&gt;
+
+&lt;p&gt;The picture is similar in the United States, which has &lt;a href="https://www.uclahealth.org/news/release/ucla-study-finds-more-women-freezing-eggs-fewer-returning"&gt;seen a surge&lt;/a&gt; in cycles of egg freezing since 2014.&lt;/p&gt;
+
+&lt;p&gt;Although some women, like Ocasio-Cortez, are choosing to freeze their eggs for career reasons, my research shows that most users of the technology actually undergo the process because they &lt;a href="https://www.emerald.com/books/oa-monograph/14889/Egg-Freezing-Fertility-and-Reproductive"&gt;haven’t found the right partner&lt;/a&gt;.&lt;/p&gt;
+
+&lt;hr&gt;
+
+
+
+&lt;p&gt;&lt;em&gt;&lt;strong&gt;No one’s 20s and 30s look the same.&lt;/strong&gt; You might be saving for a mortgage or just struggling to pay rent. You could be swiping dating apps, or trying to understand childcare. No matter your current challenges, our &lt;a href="https://tcnv.link/RYTudJL"&gt;Quarter Life series&lt;/a&gt; has articles to share in the group chat, or just to remind you that you’re not alone.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Read more from Quarter Life:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;em&gt;&lt;a href="https://theconversation.com/having-a-baby-throws-time-management-into-chaos-here-are-five-important-lessons-for-new-parents-284004"&gt;Having a baby throws time management into chaos – here are five important lessons for new parents&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;em&gt;&lt;a href="https://theconversation.com/there-is-no-right-age-to-land-a-job-meet-a-partner-or-buy-a-house-heres-why-it-feels-like-there-is-285546"&gt;There is no ‘right’ age to land a job, meet a partner or buy a house — here’s why it feels like there is&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;em&gt;&lt;a href="https://theconversation.com/babies-raw-nuanced-real-what-this-bbc-drama-gets-right-about-recurrent-miscarriage-280134"&gt;Babies: raw, nuanced, real – what this BBC drama gets right about recurrent miscarriage&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr&gt;
+
+&lt;p&gt;These women commonly &lt;a href="https://doi.org/10.1177/0003122418796807"&gt;want to find a partner&lt;/a&gt; who is equally as committed to parenthood as themselves. Egg freezing gives them more time to find this partner, and avoid engaging in what I have termed &lt;a href="https://theconversation.com/why-women-choose-to-freeze-their-eggs-new-research-95087"&gt;“panic-partnering”&lt;/a&gt; – entering into a relationship they wouldn’t otherwise consider if they weren’t at risk of unwanted childlessness.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://www.tandfonline.com/doi/pdf/10.1080/0167482X.2018.1460352?casa_token=_b60CSX-TIEAAAAA:s3OnaP8rt7xMJDWrz_hY0pG_cJcedMXIrSa4nYSa0ZjMA3YnCc27FVbtP0uJGdHE8VqC1FhKgYks"&gt;Other common reasons&lt;/a&gt; that women may choose to freeze their eggs include feeling like they’re “running out of time” to pursue motherhood, the desire to take control of their fertility and wanting to feel like they’ve done everything they can to keep the option of motherhood open.&lt;/p&gt;
+
+&lt;p&gt;Regardless of the reasons for freezing, here are a few things a person might want to consider before making a decision.&lt;/p&gt;
+
+&lt;h2&gt;1. Cost&lt;/h2&gt;
+
+&lt;p&gt;In the UK, social egg freezing is not available on the NHS. Although some women may be able to access fertility treatments through employment benefit packages, most will have to pay privately for the procedure.&lt;/p&gt;
+
+&lt;p&gt;The cost of egg freezing in the UK – including consultations, blood tests, ultrasounds, hormone medication and egg retrieval – &lt;a href="https://www.hfea.gov.uk/treatments/fertility-preservation/egg-freezing/"&gt;is typically around £7,000–£8,000&lt;/a&gt;, depending on the clinic and how the patient has responded to the procedure. &lt;/p&gt;
+
+&lt;p&gt;In the United States, prices are even more variable – coming to &lt;a href="https://www.cnbc.com/2026/08/15/aoc-egg-freezing-costs-insurance-taxes.html"&gt;between US$10,000-$20,000&lt;/a&gt; (£7,000-£14,000). The national average out-of-pocket expense is roughly $14,000 to $16,000 per cycle.&lt;/p&gt;
+
+&lt;p&gt;Most women under 38 have &lt;a href="https://www.hfea.gov.uk/about-us/media-centre/egg-freezing-a-factsheet/"&gt;around 7–14 eggs collected&lt;/a&gt; per cycle. They may therefore be advised to undergo multiple cycles to bank enough eggs for future use, which substantially increases costs.&lt;/p&gt;
+
+&lt;p&gt;Even when undergoing the procedure under the age of 38, there can be a significant difference in the number of eggs collected, meaning many women need to consider multiple cycles of treatment to store a sufficient number of eggs, which can substantially increase costs.&lt;/p&gt;
+
+&lt;p&gt;It also costs money to store these eggs before use. Annual storage typically costs a further &lt;a href="https://www.hfea.gov.uk/treatments/fertility-preservation/egg-freezing/"&gt;£100–£300&lt;/a&gt;, while using the eggs to try to conceive can cost an additional £2,500–£3,500. In the US, a cycle of IVF using previously frozen eggs is &lt;a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8892031/"&gt;on average about $23,474&lt;/a&gt;. &lt;/p&gt;
+
+&lt;p&gt;This considerable financial burden may place egg freezing beyond the reach of many women.&lt;/p&gt;
+
+&lt;h2&gt;2. Health risks&lt;/h2&gt;
+
+&lt;p&gt;Egg freezing isn’t without risk. &lt;/p&gt;
+
+&lt;p&gt;The process of ovarian stimulation needed to produce eggs carries a &lt;a href="https://obgyn.onlinelibrary.wiley.com/doi/epdf/10.1111/1471-0528.70303"&gt;risk of ovarian hyperstimulation syndrome (OHSS)&lt;/a&gt;, where the ovaries are over-stimulated following the use of hormone medication. Mild OHSS, which causes abdominal discomfort and bloating, occurs in &lt;a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11383550/"&gt;around 20-33% of cycles&lt;/a&gt;. Moderate and severe OHSS, which cause more severe abdominal pain, nausea and vomiting, occurs in &lt;a href="https://www.sciencedirect.com/science/article/abs/pii/S1751721414002358"&gt;around 3–8% of cycles&lt;/a&gt;. &lt;/p&gt;
+
+&lt;p&gt;The egg collection process may cause &lt;a href="https://obgyn.onlinelibrary.wiley.com/doi/epdf/10.1111/1471-0528.70303"&gt;further complications&lt;/a&gt;, including bleeding, pelvic infection, thrombosis and risks associated with anaesthesia such as dizziness and nausea. &lt;/p&gt;
+
+&lt;figure class="align-center "&gt;
+            &lt;img alt="A woman injects her stomach with an IVF treatment." src="https://images.theconversation.com/files/755677/original/file-20260824-60-6c2y41.jpg?ixlib=rb-4.1.1&amp;amp;q=45&amp;amp;auto=format&amp;amp;w=754&amp;amp;fit=clip" srcset="https://images.theconversation.com/files/755677/original/file-20260824-60-6c2y41.jpg?ixlib=rb-4.1.1&amp;amp;q=45&amp;amp;auto=format&amp;amp;w=600&amp;amp;h=400&amp;amp;fit=crop&amp;amp;dpr=1 600w, https://images.theconversation.com/files/755677/original/file-20260824-60-6c2y41.jpg?ixlib=rb-4.1.1&amp;amp;q=30&amp;amp;auto=format&amp;amp;w=600&amp;amp;h=400&amp;amp;fit=crop&amp;amp;dpr=2 1200w, https://images.theconversation.com/files/755677/original/file-20260824-60-6c2y41.jpg?ixlib=rb-4.1.1&amp;amp;q=15&amp;amp;auto=format&amp;amp;w=600&amp;amp;h=400&amp;amp;fit=crop&amp;amp;dpr=3 1800w, https://images.theconversation.com/files/755677/original/file-20260824-60-6c2y41.jpg?ixlib=rb-4.1.1&amp;amp;q=45&amp;amp;auto=format&amp;amp;w=754&amp;amp;h=503&amp;amp;fit=crop&amp;amp;dpr=1 754w, https://images.theconversation.com/files/755677/original/file-20260824-60-6c2y41.jpg?ixlib=rb-4.1.1&amp;amp;q=30&amp;amp;auto=format&amp;amp;w=754&amp;amp;h=503&amp;amp;fit=crop&amp;amp;dpr=2 1508w, https://images.theconversation.com/files/755677/original/file-20260824-60-6c2y41.jpg?ixlib=rb-4.1.1&amp;amp;q=15&amp;amp;auto=format&amp;amp;w=754&amp;amp;h=503&amp;amp;fit=crop&amp;amp;dpr=3 2262w" sizes="(min-width: 1466px) 754px, (max-width: 599px) 100vw, (min-width: 600px) 600px, 237px"&gt;
+            &lt;figcaption&gt;
+              &lt;span class="caption"&gt;The process may come with health risks.&lt;/span&gt;
+              &lt;span class="attribution"&gt;&lt;a class="source" href="https://www.shutterstock.com/image-photo/ivf-infertility-treatment-concept-woman-have-2439352577?trackingId=fbbff819-a67b-444a-a46c-3e39e8392ad2&amp;amp;listId=searchResults"&gt;leungchopan/ Shutterstock&lt;/a&gt;&lt;/span&gt;
+            &lt;/figcaption&gt;
+          &lt;/figure&gt;
+
+&lt;h2&gt;3. Success rates&lt;/h2&gt;
+
+&lt;p&gt;A further significant risk of the technology is also that it may not result in a live birth in the future.&lt;/p&gt;
+
+&lt;p&gt;The chances of having a future live birth from a previously frozen egg  depends on a &lt;a href="https://www.emerald.com/books/oa-monograph/14889/chapter/85992868/Introduction"&gt;range of factors&lt;/a&gt; – including a clinic’s expertise, the age that you froze your eggs and the number of eggs stored.&lt;/p&gt;
+
+&lt;p&gt;Since &lt;a href="https://www.emerald.com/books/oa-monograph/14889/chapter/85992868/Introduction"&gt;egg quality declines&lt;/a&gt; as women age, older women often need to bank more eggs than their younger peers to increase their chance of a live birth with these frozen eggs. &lt;/p&gt;
+
+&lt;p&gt;&lt;a href="https://academic.oup.com/humrep/article/32/4/853/2968357"&gt;Statistical modelling&lt;/a&gt; suggests that if a woman undergoes egg freezing before her 35th birthday, she may need around 20 frozen eggs to achieve almost an 80% chance of a future live birth. By contrast, a woman who undergoes the procedure when she is 39 will need 50 eggs to potentially achieve the same likelihood of success. &lt;/p&gt;
+
+&lt;h2&gt;4. Emotional toll&lt;/h2&gt;
+
+&lt;p&gt;Freezing your eggs can also be &lt;a href="https://www.tandfonline.com/doi/10.1080/14647273.2018.1522456?casa_token=9eaha1CVk5sAAAAA%3A4RIPxZ0_oR7SBRr9kzIUG0oW6mGAG9lvUrkN-DLHj2BrVMekPfzTqx1riSkXl4EbvH5UfNcvhWgQ&amp;amp;casa_token=mitRNjwkyhUAAAAA%3AMZzR6i0Tj9-uYVir-vP1yHUdSGyWFNRhHnMaHmp00Z7ZQxgZKIdfpagxs_RbmkkHuMjn-1UX3_v0"&gt;emotionally and practically challenging&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The process requires multiple visits to the fertility clinic for consultations, blood tests and internal ultrasounds, creating a significant time commitment alongside the financial costs of treatment. &lt;/p&gt;
+
+&lt;p&gt;For many, the emotional burden of &lt;a href="https://www.tandfonline.com/doi/10.1080/14647273.2018.1522456?casa_token=9eaha1CVk5sAAAAA%3A4RIPxZ0_oR7SBRr9kzIUG0oW6mGAG9lvUrkN-DLHj2BrVMekPfzTqx1riSkXl4EbvH5UfNcvhWgQ&amp;amp;casa_token=mitRNjwkyhUAAAAA%3AMZzR6i0Tj9-uYVir-vP1yHUdSGyWFNRhHnMaHmp00Z7ZQxgZKIdfpagxs_RbmkkHuMjn-1UX3_v0"&gt;undergoing the process alone is particularly challenging&lt;/a&gt;, especially when attending the clinic as a single person alongside patients undergoing IVF with their partners. &lt;/p&gt;
+
+&lt;p&gt;Some women also report feelings of &lt;a href="https://www.tandfonline.com/doi/10.1080/14647273.2018.1522456?casa_token=ZmCp-OZBRloAAAAA%3AampZUSjJvzQ_SF1Dw67aud-ftF1uZiJ5WyYGf4x5jSRlrWxamW1flVFQ_E7s1F2SgxFUSKy3bn3w&amp;amp;casa_token=vn-9cNdhp4UAAAAA%3AHfCVuXEy1ylWw2mkynPjPkhZYdHZDc47RKy-NYOC15LPItFPt2qYGZjgaHZXWtmaQs1I1kvnZ6jO"&gt;stigma and embarrassment&lt;/a&gt; about using the technology at a stage in their life when marriage and motherhood are often still perceived as expected milestones. &lt;/p&gt;
+
+&lt;h2&gt;Reproductive “insurance”&lt;/h2&gt;
+
+&lt;p&gt;Despite the significant financial, physical and often emotional costs of egg freezing, evidence shows many women do not return to use their eggs. According to &lt;a href="https://pubmed.ncbi.nlm.nih.gov/39025683/"&gt;one UK clinic&lt;/a&gt;, only 14% returned to use the eggs they had retrieved – with a nearly 37% live birth rate in these patients.&lt;/p&gt;
+
+&lt;p&gt;But even when women don’t use their eggs to try and conceive, evidence shows they &lt;a href="https://onlinelibrary.wiley.com/doi/full/10.1111/jmwh.13332?casa_token=kLPFH5wmAd8AAAAA%3AgrgyWnEf4XSkODicknll11jwVB4ZY4WAKPLePCdSgPXSdJ0fHjJ-6bxclYCZj6FTjQvaiw1eNoXRhnk"&gt;do not regret&lt;/a&gt; having undergone the procedure. This is because it has provided them peace of mind and greater reproductive autonomy.&lt;/p&gt;
+
+&lt;p&gt;While often perceived (and promoted) as a form of reproductive insurance, it’s essential that women undertaking egg freezing understand of the cost, risks and likelihood of success.&lt;/p&gt;&lt;img src="https://counter.theconversation.com/content/290101/count.gif" alt="The Conversation" width="1" height="1" /&gt;
+&lt;p class="fine-print"&gt;&lt;em&gt;&lt;span&gt;Kylie Baldwin receives funding from the National Institute for Heath and Care Research and the British Academy.&lt;/span&gt;&lt;/em&gt;&lt;/p&gt;</content>
+    <summary>An increasing number of women are turning to “social” egg freezing each year.</summary>
+    <author>
+      <name>Kylie Baldwin, Senior Lecturer, School of Social Sciences and Humanities, Loughborough University</name>
+      <foaf:homepage rdf:resource="https://theconversation.com/profiles/kylie-baldwin-444616"/>
+    </author>
+    <rights>Licensed as Creative Commons – attribution, no derivatives.</rights>
+  </entry>
+  </feed>
