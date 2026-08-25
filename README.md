@@ -39,7 +39,8 @@ Sections have their own quotas rather than competing for one global ranking. A
 heavy news week therefore cannot crowd out the ethics slot — the section this
 audience benefits from most, and the one with the thinnest supply. Sections with
 a `min` of 0 are omitted entirely when nothing qualifies; a missing block beats a
-weak filler item.
+weak filler item. *Qualifies* includes being recent: past its `min`, a section
+takes nothing staler than `issue.min_recency`.
 
 Edit `config/digest.yaml` to change the order, headings or quotas.
 
@@ -118,6 +119,18 @@ Sections are filled in two passes over the template — each gets its `min`
 before any gets its second choice. One pass would let an early greedy section
 take an item a later thin one was relying on, which is the crowding-out the
 per-section quotas exist to prevent.
+
+The two passes also decide where the **recency floor** applies. `window()`
+selects on when an item was *stored*, not when it was written, so the first
+poll of an archive-backed source lands months of history looking as current as
+this morning's. Scoring decays it — but a low score still wins a section that
+nothing else is competing for, which is how a four-month-old ministry release
+came within one message-budget trim of the policy block. So the `min` pass
+ignores the floor, and the `max` pass enforces it: guaranteed slots always
+fill, optional ones only with something recent enough to belong in a weekly
+digest. `issue.min_recency` is that line, on the same 1.0-to-0.0 scale
+`score.py` decays over sixty days; 0.5 is about thirty-three days, comfortably
+below the oldest item a real week actually published.
 
 Clusters catch a story filed twice. A story that runs all week needs
 something else: the DRC Bundibugyo outbreak reached one week's candidates as

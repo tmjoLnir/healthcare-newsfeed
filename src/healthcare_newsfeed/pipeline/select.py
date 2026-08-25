@@ -11,6 +11,7 @@ Rules:
   * at most SUBJECT_CAP items on any one subject
   * never republish an item carried by an earlier issue
   * a section short on supply shrinks; it does not borrow from another
+  * past its `min`, a section takes nothing staler than `issue.min_recency`
 
 Which sections an item may fill is a property of its source, so this takes
 the configured sources alongside the template — `Item` carries a source key
@@ -20,6 +21,15 @@ Allocation runs twice over the sections in template order: once giving each
 its `min`, then again topping up to `max`. One pass would let an early
 greedy section take an item a later thin one was relying on, which is the
 crowding-out the quotas exist to prevent.
+
+The two passes also decide where the recency floor bites. The `min` pass
+ignores it, so a section's guaranteed slots are always filled — the issue
+gets its lead story whatever kind of week it was. The `max` pass enforces it,
+so the optional part of a section is only filled by something recent enough
+to belong in a weekly digest. For a `min: 0` section that means the whole
+block, which is what digest.yaml means by "better a missing block than a weak
+filler item": without a floor, an item scoring 0.0 on recency still fills an
+optional section whenever nothing else competes for it.
 """
 
 from __future__ import annotations
@@ -31,6 +41,7 @@ from dataclasses import dataclass, field
 
 from ..models import Digest, Item, Section, Source
 from .dedupe import subjects
+from .score import recency
 
 SUBJECT_CAP = 2
 """How many items in one issue may be about the same thing.
@@ -122,21 +133,29 @@ def select(items: list[Item], template: dict, issue: int,
     # issue already carried.
     ledger = _Ledger(capped=_capped(candidates, subjects(items), sources, keys))
 
+    start, end = week or _span(items)
+    # Age is measured against the end of the issue's own week rather than the
+    # wall clock, so re-rendering an issue answers the same way whenever it is
+    # run. A hard gate that drifted with the clock would quietly change a past
+    # issue; scoring can afford to drift, a gate cannot.
+    floor = template.get("issue", {}).get("min_recency", 0.0)
+
     for quota in ("min", "max"):
         for spec in specs:
-            _fill(spec, spec[quota], chosen, candidates, ledger, sources)
+            _fill(spec, spec[quota], chosen, candidates, ledger, sources,
+                  floor=floor if quota == "max" else 0.0, now=end)
 
     sections = [
         Section(key=spec["key"], heading=spec["heading"], items=chosen[spec["key"]])
         for spec in specs
         if chosen[spec["key"]]           # an absent block beats a padded one
     ]
-    start, end = week or _span(items)
     return Digest(issue=issue, week_start=start, week_end=end, sections=sections)
 
 
 def _fill(spec: dict, limit: int, chosen: dict[str, list[Item]], candidates: list[Item],
-          ledger: _Ledger, sources: Mapping[str, Source]) -> None:
+          ledger: _Ledger, sources: Mapping[str, Source], *,
+          floor: float, now: dt.datetime) -> None:
     key = spec["key"]
     picked = chosen[key]
     if len(picked) >= limit:
@@ -157,6 +176,8 @@ def _fill(spec: dict, limit: int, chosen: dict[str, list[Item]], candidates: lis
                 continue
             source = sources.get(item.source_key)
             if source is None or key not in source.sections:
+                continue
+            if floor and recency(item, now) < floor:
                 continue
             if first_sweep and item.source_key in represented:
                 continue

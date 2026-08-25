@@ -17,8 +17,11 @@ MONDAY = dt.datetime(2026, 8, 24, tzinfo=dt.UTC)
 WEEK = (MONDAY, MONDAY + dt.timedelta(days=7))
 
 
-def template(*sections: dict) -> dict:
-    return {"issue": {"title": "This Week in Medicine"}, "sections": list(sections)}
+def template(*sections: dict, min_recency: float | None = None) -> dict:
+    issue: dict = {"title": "This Week in Medicine"}
+    if min_recency is not None:
+        issue["min_recency"] = min_recency
+    return {"issue": issue, "sections": list(sections)}
 
 
 def section(key: str, *, low: int = 0, high: int = 2, **extra) -> dict:
@@ -364,3 +367,83 @@ def test_unrelated_items_are_untouched(scored, sources, padding):
     digest = select(padding(items), template(section("journals", low=1, high=3)), 1, sources)
 
     assert len(titles(digest, "journals")) == 3
+
+
+# --- the recency floor ------------------------------------------------------
+#
+# window() selects on when an item was *stored*, so the first poll of an
+# archive-backed source lands months of history looking every bit as current
+# as this morning's. Scoring decays it, but a low score still wins a section
+# nothing else is competing for — which is how a four-month-old ministry
+# release came within one message-budget trim of the policy block.
+
+def aged(make_item, days: int, *, source: str, title: str = "A study", **kw):
+    """One candidate, published `days` before the issue's week ends."""
+    item = make_item(title, source=source, published=WEEK[1] - dt.timedelta(days=days), **kw)
+    item.score, item.cluster_id = 1.0, item.id
+    return item
+
+
+def test_an_optional_section_is_left_empty_rather_than_filled_with_a_stale_item(
+        make_item, sources):
+    items = [aged(make_item, 120, source="jme_ethics", title="An old post")]
+
+    digest = select(items, template(section("ethics", low=0, high=1), min_recency=0.5),
+                    1, sources, week=WEEK)
+
+    assert digest.sections == []
+
+
+def test_a_fresh_item_still_fills_an_optional_section(make_item, sources):
+    items = [aged(make_item, 3, source="jme_ethics", title="A new post")]
+
+    digest = select(items, template(section("ethics", low=0, high=1), min_recency=0.5),
+                    1, sources, week=WEEK)
+
+    assert [block.key for block in digest.sections] == ["ethics"]
+
+
+def test_a_guaranteed_slot_ignores_the_floor(make_item, sources):
+    """The issue gets its lead story whatever kind of week it was."""
+    items = [aged(make_item, 120, source="bbc_health", title="An old headline")]
+
+    digest = select(items, template(section("story_of_week", low=1, high=1), min_recency=0.5),
+                    1, sources, week=WEEK)
+
+    assert [block.key for block in digest.sections] == ["story_of_week"]
+
+
+def test_the_floor_bites_only_above_the_min(make_item, sources):
+    """A section takes its guaranteed item, then stops rather than padding."""
+    items = [aged(make_item, 120, source="nejm", title="An old paper", item_id="a"),
+             aged(make_item, 120, source="lancet", title="Another old paper", item_id="b")]
+
+    digest = select(items, template(section("journals", low=1, high=4), min_recency=0.5),
+                    1, sources, week=WEEK)
+
+    (journals,) = digest.sections
+    assert [item.title for item in journals.items] == ["An old paper"]
+
+
+def test_a_template_without_a_floor_keeps_the_old_behaviour(make_item, sources):
+    items = [aged(make_item, 120, source="jme_ethics", title="An old post")]
+
+    digest = select(items, template(section("ethics", low=0, high=1)), 1, sources, week=WEEK)
+
+    assert [block.key for block in digest.sections] == ["ethics"]
+
+
+def test_age_is_measured_against_the_issue_week_not_the_clock(make_item, sources):
+    """Re-rendering a past issue has to answer the same way it did then, so a
+    hard gate measures against the week being published, not wall-clock now."""
+    items = [aged(make_item, 3, source="jme_ethics", title="Current that week")]
+    long_ago = (WEEK[0] - dt.timedelta(days=400), WEEK[1] - dt.timedelta(days=400))
+
+    # Same items, an issue dated over a year back: what was fresh then is
+    # still fresh relative to its own week.
+    for item in items:
+        item.published = long_ago[1] - dt.timedelta(days=3)
+    digest = select(items, template(section("ethics", low=0, high=1), min_recency=0.5),
+                    1, sources, week=long_ago)
+
+    assert [block.key for block in digest.sections] == ["ethics"]
