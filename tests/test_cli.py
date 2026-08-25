@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import re
 from typing import ClassVar
 
 import pytest
@@ -19,6 +20,7 @@ from healthcare_newsfeed.models import RawItem
 from healthcare_newsfeed.sources import ADAPTERS
 from healthcare_newsfeed.sources.base import FeedError
 from healthcare_newsfeed.store import Store
+from healthcare_newsfeed.telegram import TelegramError
 
 NOW = dt.datetime(2026, 8, 25, 2, 0, tzinfo=dt.UTC)
 
@@ -70,6 +72,31 @@ def config(tmp_path):
 @pytest.fixture
 def db(tmp_path):
     return str(tmp_path / "newsfeed.db")
+
+
+@pytest.fixture
+def publishable(tmp_path):
+    """A sources.yaml whose single source may fill the sections named.
+
+    publish runs against the shipped config/digest.yaml, so the source has
+    to be eligible for the sections that carry a `min` — otherwise the issue
+    comes back empty for reasons that have nothing to do with the test.
+    """
+    def _publishable(*sections: str) -> str:
+        document = {
+            "sources": [{
+                # publish never fetches — it reads the store — so the adapter
+                # is irrelevant beyond having to be one the config recognises.
+                "key": "bbc", "name": "BBC Health", "url": "https://bbc.test/feed",
+                "adapter": "rss", "licence": "link_only", "weight": 1.0,
+                "sections": list(sections) or ["story_of_week", "journals",
+                                               "explainer", "also_reading"],
+            }],
+        }
+        path = tmp_path / "publishable.yaml"
+        path.write_text(yaml.safe_dump(document))
+        return str(path)
+    return _publishable
 
 
 def item(key: str, slug: str) -> RawItem:
@@ -271,13 +298,173 @@ def test_database_path_prefers_the_flag_then_the_environment(monkeypatch, tmp_pa
     assert str(database_path(argparse.Namespace(db=None))) == "data/newsfeed.db"
 
 
-# --- the commands that are not built yet -------------------------------------
+# --- publishing --------------------------------------------------------------
 
-def test_publish_says_what_it_is_waiting_on(capsys):
-    assert main(["publish"]) == 2
+# Distinct stories, not one story numbered six ways: dedupe clusters on
+# title similarity and takes one item per cluster, so near-identical titles
+# would leave a publishable issue holding a single item.
+STORIES = [
+    "Consent and autonomy at the end of life",
+    "Why the NHS waiting list keeps growing",
+    "Ebola outbreak update from the Democratic Republic of Congo",
+    "A phase 3 trial of a new antiviral therapy",
+    "Medicaid funding reform clears its first committee",
+    "How rapid genome sequencing changed one paediatric unit",
+    "Vaccination campaigns resume after a measles resurgence",
+    "The ethics of rationing intensive care beds",
+]
+
+
+def stock_store(db_path: str, count: int = len(STORIES)) -> None:
+    """Put a week's worth of candidates in the store, ready to publish."""
+    with Store(db_path) as store:
+        store.migrate()
+        store.upsert([
+            RawItem(source_key="bbc", title=STORIES[n % len(STORIES)],
+                    url=f"https://bbc.test/{n}", published=NOW,
+                    summary="A plainly worded account of what happened and why it matters "
+                            "to a reader preparing for a medical school interview.")
+            for n in range(count)
+        ])
+
+
+@pytest.fixture
+def channel(monkeypatch):
+    """Capture what publish would post, in place of the real client."""
+    posted: list[str] = []
+
+    class FakeClient:
+        chat_id = "@test_channel"
+        fail_on: ClassVar[int | None] = None
+
+        def send(self, text, *, parse_mode="HTML", disable_preview=False):
+            if self.fail_on is not None and len(posted) + 1 == self.fail_on:
+                raise TelegramError("HTTP 429: Too Many Requests")
+            posted.append(text)
+            return {"message_id": len(posted)}
+
+        def close(self):
+            pass
+
+    FakeClient.fail_on = None
+    monkeypatch.setattr("healthcare_newsfeed.cli.TelegramClient",
+                        type("Factory", (), {"from_env": staticmethod(FakeClient)}))
+    FakeClient.posted = posted
+    return FakeClient
+
+
+def test_publish_posts_the_issue_and_records_it(publishable, db, channel, capsys):
+    stock_store(db)
+
+    assert main(["publish", "--config", publishable(), "--db", db]) == 0
+
+    assert len(channel.posted) == 1
+    assert "This Week in Medicine" in channel.posted[0]
+    assert "issue 1 published to @test_channel" in capsys.readouterr().out
+    with Store(db) as store:
+        assert store.next_issue() == 2
+        assert store.conn.execute(
+            "SELECT count(*) FROM items WHERE published_in_issue = 1").fetchone()[0] > 0
+
+
+def test_a_published_item_is_never_carried_again(publishable, db, channel):
+    """select() excludes what an earlier issue carried; publish is what records it.
+
+    One eligible section, so its `max` of 6 leaves candidates over for a
+    second issue — with every section open the whole week fits in issue 1
+    and there is nothing left to prove.
+    """
+    config_path = publishable("also_reading")
+    stock_store(db)
+    main(["publish", "--config", config_path, "--db", db])
+    first = _linked(channel.posted)
+
+    channel.posted.clear()
+    main(["publish", "--config", config_path, "--db", db])
+    second = _linked(channel.posted)
+
+    assert first and second
+    assert not first & second
+
+
+def _linked(messages: list[str]) -> set[str]:
+    """The item URLs a rendered burst carries."""
+    return set(re.findall(r"https://bbc\.test/\d+", "\n".join(messages)))
+
+
+def test_a_dry_run_prints_the_issue_without_posting_or_recording(publishable, db, channel,
+                                                                 capsys):
+    stock_store(db)
+
+    assert main(["publish", "--config", publishable(), "--db", db, "--dry-run"]) == 0
+
+    out = capsys.readouterr().out
+    assert not channel.posted
+    assert "This Week in Medicine" in out and "nothing was posted" in out
+    with Store(db) as store:
+        assert store.next_issue() == 1                                     # not recorded
+
+
+def test_a_partial_post_records_nothing(publishable, db, channel, capsys, monkeypatch):
+    """Recording a half-posted issue would retire the items that never arrived.
+
+    A duplicate is visible in the channel and a human can delete it; an item
+    silently retired from every future issue is neither visible nor
+    recoverable. So the store is written only once the whole burst lands.
+    """
+    stock_store(db)
+    monkeypatch.setattr("healthcare_newsfeed.cli.render",
+                        lambda *a, **k: ["message one", "message two", "message three"])
+    channel.fail_on = 2
+
+    assert main(["publish", "--config", publishable(), "--db", db]) == 1
 
     error = capsys.readouterr().err
-    assert "not built yet" in error and "render.py" in error
+    assert "failed on message 2 of 3" in error
+    assert "was NOT recorded" in error and "re-run will repost" in error
+    assert channel.posted == ["message one"]
+    with Store(db) as store:
+        assert store.next_issue() == 1
+        assert store.conn.execute(
+            "SELECT count(*) FROM items WHERE published_in_issue IS NOT NULL").fetchone()[0] == 0
+
+
+def test_a_failure_on_the_first_message_does_not_warn_about_duplicates(publishable, db,
+                                                                       channel, capsys):
+    stock_store(db)
+    channel.fail_on = 1
+
+    assert main(["publish", "--config", publishable(), "--db", db]) == 1
+
+    error = capsys.readouterr().err
+    assert "failed on message 1" in error and "already went out" not in error
+
+
+def test_publish_says_so_when_the_store_is_empty(publishable, db, channel, capsys):
+    assert main(["publish", "--config", publishable(), "--db", db]) == 1
+
+    assert "has `newsfeed poll` run?" in capsys.readouterr().err
+    assert not channel.posted
+
+
+def test_publish_reports_missing_credentials_rather_than_traceback(publishable, db,
+                                                                   monkeypatch, capsys):
+    stock_store(db)
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
+
+    assert main(["publish", "--config", publishable(), "--db", db]) == 2
+
+    assert "BotFather" in capsys.readouterr().err
+
+
+def test_publish_takes_the_issue_number_it_is_given(publishable, db, channel):
+    stock_store(db)
+
+    assert main(["publish", "--config", publishable(), "--db", db, "--issue", "42"]) == 0
+
+    with Store(db) as store:
+        assert store.next_issue() == 43
 
 
 def test_verify_shells_out_to_the_standalone_checker(monkeypatch, capsys):
