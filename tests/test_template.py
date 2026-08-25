@@ -35,7 +35,7 @@ def test_the_shipped_template_resolves():
 
     assert spec.title == "This Week in Medicine"
     assert spec.sections[0].key == "story_of_week"
-    assert spec.section("explainer").style == "extract"
+    assert spec.section("explainer").style == "short"
     assert spec.section("also_reading").body_chars == 0
 
 

@@ -23,7 +23,7 @@ This Week in Medicine — Issue 12
 ──────────────────────────────────────────
 🔬 Story of the week      1 item,  with context
 📊 From the journals      2-4 items (NEJM · Lancet · JAMA · Nature Medicine)
-💡 Explainer              1-2 items (full text, republishable)
+💡 Explainer              1-2 items (CC-licensed, republishable)
 ⚖️  Ethics corner          0-1 item
 🌍 Global health watch    0-2 items (WHO)
 🏥 Policy                 0-1 item
@@ -253,10 +253,18 @@ is the smaller of the two.**
 | `long` | 400 ch | **200 ch** | 400 ch |
 | `extract` | 900 ch | **200 ch** | 900 ch |
 
-So the same explainer slot carries 900 characters of a Conversation article
-and 200 of a STAT one, without either section needing to know which source
-filled it. A summary trimmed below 60 characters is dropped entirely — three
-words and an ellipsis is worse than a headline and a link.
+So the same `long` slot carries 400 characters of a Conversation article and
+200 of a STAT one, without the section needing to know which source filled
+it. A summary trimmed below 60 characters is dropped entirely — three words
+and an ellipsis is worse than a headline and a link.
+
+The shipped template asks `short` of the explainer, so every section but the
+story of the week and the ethics corner now runs at one length. That is an
+editorial choice rather than a licence one, and it has a consequence worth
+stating: 180 sits below the link-only ceiling of 200, so in a `short` section
+a CC-licensed article and a paywalled one render identically. `extract`
+remains available for a section meant to carry real article text — nothing
+ships using it.
 
 ---
 
@@ -283,10 +291,11 @@ Two shapes of it, and the renderer removes both:
   answer for it. It falls out of the general rule rather than needing a
   special case.
 - **The Conversation leads with its hero image's credit.** Every article
-  opens `New Africa/Shutterstock.com …`, and the explainer section carries
-  more text than any other, so it would open on a photo agency. A credit is
-  matched only with its `/` separator — a bare agency name would fire on a
-  wire report attributed to Reuters.
+  opens `New Africa/Shutterstock.com …`, and it is the explainer section
+  those articles fill, so the block would open on a photo agency — at 180
+  characters the credit is a larger share of the item, not a smaller one.
+  A credit is matched only with its `/` separator — a bare agency name would
+  fire on a wire report attributed to Reuters.
 
 Both run at render time, not in the adapter: a `RawItem` is the item as
 found, and stripping upstream would remove evidence the scorer ranks on.

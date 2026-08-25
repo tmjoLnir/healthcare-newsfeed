@@ -29,7 +29,7 @@ sections:
     heading: "💡 Explainer"
     min: 1
     max: 2
-    style: extract            # CC-licensed: may carry a long extract
+    style: short              # same ask as the other sections; see README
 
   - key: ethics
     heading: "⚖️ Ethics corner"

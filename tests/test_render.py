@@ -45,6 +45,26 @@ def spec():
 
 
 @pytest.fixture
+def extract_spec():
+    """A template whose explainer still asks for a full extract.
+
+    The shipped config asks `short` of every prose section, and 180 sits
+    below the link-only ceiling of 200 — so a section that asks for more
+    than the ceiling is the only place the licence rule and the splitter can
+    be observed at all. How much text a section asks for is an editorial
+    setting; that the renderer honours the smaller of ask and ceiling, and
+    that it splits on a section boundary, are code. These tests are about
+    the second, so they bring their own template rather than borrowing
+    whatever quota `config/digest.yaml` happens to carry this week.
+    """
+    return resolve({
+        "issue": {"title": "This Week in Medicine", "timezone": "Asia/Singapore"},
+        "sections": [{"key": "explainer", "heading": "💡 Explainer",
+                      "min": 1, "max": 12, "style": "extract"}],
+    })
+
+
+@pytest.fixture
 def shipped_sources():
     return {source.key: source for source in load_sources("config/sources.yaml")}
 
@@ -79,13 +99,13 @@ def test_a_link_only_source_carries_a_quotation_not_an_article(digest, spec, mak
     assert body.count(item.canonical_url) == 1
 
 
-def test_a_cc_source_may_carry_the_extract_its_section_asks_for(digest, spec, make_source,
+def test_a_cc_source_may_carry_the_extract_its_section_asks_for(digest, extract_spec, make_source,
                                                                 make_item):
     item = make_item("An explainer", source="conversation_uk", summary=PROSE * 12)
     sources = {"conversation_uk": make_source("conversation_uk", sections=("explainer",),
                                               licence=Licence.CC_REPUBLISHABLE)}
 
-    body = only(render(digest(("explainer", "💡 Explainer", [item])), sources, spec))
+    body = only(render(digest(("explainer", "💡 Explainer", [item])), sources, extract_spec))
     summary = _summary_line(body)
 
     # `extract` asks for 900; the CC ceiling of 1200 does not get in the way.
@@ -95,15 +115,23 @@ def test_a_cc_source_may_carry_the_extract_its_section_asks_for(digest, spec, ma
 
 def test_the_licence_caps_the_section_not_the_other_way_round(digest, spec, make_source,
                                                               make_item):
-    """The same section renders shorter for a link-only source than a CC one."""
-    sections = ("explainer",)
+    """The same section renders shorter for a link-only source than a CC one.
+
+    On the shipped template, deliberately: a section has to ask for more
+    than the link-only ceiling of 200 before the two licences can render
+    differently at all, and `story_of_week` asking `long` is what makes that
+    true today. If every section were dropped to `short`, the whole licence
+    mechanism would go quiet without a single test noticing — so this one
+    reads the real config rather than a template of its own.
+    """
+    sections = ("story_of_week",)
     linked = make_item("Same slot", source="link", summary=PROSE * 12)
     freed = make_item("Same slot", source="cc", summary=PROSE * 12)
     sources = {"link": make_source("link", sections=sections),
                "cc": make_source("cc", sections=sections, licence=Licence.CC_REPUBLISHABLE)}
 
-    short = _summary_line(only(render(digest(("explainer", "💡 E", [linked])), sources, spec)))
-    long = _summary_line(only(render(digest(("explainer", "💡 E", [freed])), sources, spec)))
+    short = _summary_line(only(render(digest(("story_of_week", "🔬 S", [linked])), sources, spec)))
+    long = _summary_line(only(render(digest(("story_of_week", "🔬 S", [freed])), sources, spec)))
 
     assert short and long
     assert len(short) <= LICENCE_CEILINGS[Licence.LINK_ONLY] < len(long)
@@ -111,10 +139,10 @@ def test_the_licence_caps_the_section_not_the_other_way_round(digest, spec, make
 
 def test_public_domain_is_treated_as_republishable(digest, spec, make_source, make_item):
     item = make_item("An outbreak report", source="who_dons", summary=PROSE * 12)
-    sources = {"who_dons": make_source("who_dons", sections=("explainer",),
+    sources = {"who_dons": make_source("who_dons", sections=("story_of_week",),
                                        licence=Licence.PUBLIC_DOMAIN)}
 
-    summary = _summary_line(only(render(digest(("explainer", "💡 E", [item])), sources, spec)))
+    summary = _summary_line(only(render(digest(("story_of_week", "🔬 S", [item])), sources, spec)))
 
     assert len(summary) > LICENCE_CEILINGS[Licence.LINK_ONLY]
 
@@ -314,35 +342,35 @@ def test_trim_keeps_the_ellipsis_inside_the_budget():
 
 # --- splitting --------------------------------------------------------------
 
-def test_a_long_issue_is_split_into_an_ordered_burst(digest, spec, make_source, make_item):
+def test_a_long_issue_is_split_into_an_ordered_burst(digest, extract_spec, make_source, make_item):
     items = [make_item(f"Explainer {n}", source="cc", summary=PROSE * 12) for n in range(12)]
     sources = {"cc": make_source("cc", sections=("explainer",),
                                  licence=Licence.CC_REPUBLISHABLE)}
 
-    messages = render(digest(("explainer", "💡 Explainer", items)), sources, spec)
+    messages = render(digest(("explainer", "💡 Explainer", items)), sources, extract_spec)
 
     assert len(messages) > 1
-    assert all(length(message) <= spec.max_message_chars for message in messages)
+    assert all(length(message) <= extract_spec.max_message_chars for message in messages)
 
 
-def test_a_split_section_repeats_its_heading(digest, spec, make_source, make_item):
+def test_a_split_section_repeats_its_heading(digest, extract_spec, make_source, make_item):
     """A reader landing mid-block still needs to know which section it is."""
     items = [make_item(f"Explainer {n}", source="cc", summary=PROSE * 12) for n in range(12)]
     sources = {"cc": make_source("cc", sections=("explainer",),
                                  licence=Licence.CC_REPUBLISHABLE)}
 
-    messages = render(digest(("explainer", "💡 Explainer", items)), sources, spec)
+    messages = render(digest(("explainer", "💡 Explainer", items)), sources, extract_spec)
 
     assert "(cont.)" in messages[1]
     assert all("💡 Explainer" in message for message in messages[1:])
 
 
-def test_no_item_is_ever_split_across_messages(digest, spec, make_source, make_item):
+def test_no_item_is_ever_split_across_messages(digest, extract_spec, make_source, make_item):
     items = [make_item(f"Explainer {n}", source="cc", summary=PROSE * 12) for n in range(12)]
     sources = {"cc": make_source("cc", sections=("explainer",),
                                  licence=Licence.CC_REPUBLISHABLE)}
 
-    for message in render(digest(("explainer", "💡 E", items)), sources, spec):
+    for message in render(digest(("explainer", "💡 E", items)), sources, extract_spec):
         assert message.count("<a href") == message.count("</a>")
         assert message.count("<b>") == message.count("</b>")
         assert message.count("<i>") == message.count("</i>")
