@@ -225,6 +225,10 @@ the adapter reads at most the newest 200 records whichever size arrives, parses
 a partial page and a whole one identically, and the daily transfer swings
 between 0.5 MB and 7.5 MB depending on the cache. Handled by `sources/moh.py`.
 
+MOH itself is reachable from an Actions runner — verified in CI on 2026-08-25,
+which was granted the byte range the same day a residential path was refused
+it. So it does not join NEJM and Annals in needing a proxied egress address.
+
 Two things follow. MOH sets headlines in capitals, which would shout among
 every other source's sentence case, so the adapter recases them — best-effort,
 since capitalising the source destroyed the difference between an acronym and

@@ -183,7 +183,9 @@ sources:
       payload, and the poller asks for the first 0.5 MB of it. CloudFront
       grants that range only sometimes and answers a cache hit with the whole
       7.5 MB, so the daily transfer swings between the two; the adapter reads
-      the newest 200 records either way. Titles are published in capitals and are recased on
+      the newest 200 records either way. Verified from a GitHub Actions runner
+      on 2026-08-25 — 206, range granted, unlike from a residential path the
+      same day — so unlike nejm and annals_sg this one is not egress-blocked. Titles are published in capitals and are recased on
       the way in; items carry no summary, because the index has none and
       MOH's Terms of Use forbid reproducing the body text the item pages
       carry — so these render as title and link, like WHO news items.
