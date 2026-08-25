@@ -19,10 +19,10 @@ jobs:
       - run: pytest -q
 
   feeds:
-    # Network-dependent, so it is advisory rather than blocking: some
-    # publishers rate-limit or block shared CI egress addresses.
+    # A real gate. verify_feeds.py separates a blocked host (403/429 on a
+    # shared CI egress address — NEJM does this to Actions runners) from a
+    # genuinely broken or abandoned feed, and only the latter fails the run.
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

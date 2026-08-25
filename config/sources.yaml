@@ -69,8 +69,10 @@ sources:
     sections: [journals]
     retention_days: 123
     notes: >
-      Feed carries an 87-character citation string in place of a summary.
-      Renders as title + link only.
+      Feed carries an 87-character citation string in place of a summary,
+      so items render title + link only. Also returns 403 to GitHub Actions
+      runners and other datacenter IPs while serving normally elsewhere —
+      the deployed poller may need a residential or proxied egress address.
 
   - key: lancet
     name: The Lancet

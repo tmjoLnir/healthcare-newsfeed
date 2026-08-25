@@ -129,8 +129,11 @@ https://www.who.int/api/news/newsitems?$orderby=PublicationDateAndTime desc&$top
 The news collection returns no body text and relative URLs, so those items render
 as title + link. Outbreak news does carry a summary. Handled by `sources/who.py`.
 
-**NEJM supplies no summary.** Its feed carries an 87-character citation string
-where the description belongs, so NEJM items render title + link only.
+**NEJM supplies no summary, and blocks datacenter IPs.** Its feed carries an
+87-character citation string where the description belongs, so NEJM items render
+title + link only. It also returns 403 to GitHub Actions runners while serving
+normally from other networks — so the deployed poller may need a residential or
+proxied egress address to reach it.
 
 **The ethics blog is bursty.** Roughly 1-2 posts a week on average, but it can
 fall silent for a fortnight — which is why the ethics section may be empty rather
@@ -153,9 +156,12 @@ different failure modes. The Conversation's Indonesian edition is the nearest
 verified regional signal. Covering MOH properly would mean scraping its static
 Isomer pages, which is tractable but a separate decision.
 
-Because BMJ blocks datacenter IPs, expect some publishers to treat shared CI
-egress the same way. The feed check in CI is advisory (`continue-on-error`) for
-exactly this reason.
+BMJ blocks datacenter IPs outright, and NEJM does the same to GitHub Actions
+runners — so expect some publishers to treat any shared egress address this way.
+`tools/verify_feeds.py` therefore separates the two cases: a 401/403/429 is
+reported as `BLOCKED` and does not fail the sweep, while a 404, an unparseable
+response or an empty feed is a real `FAIL`. Pass `--strict` to treat blocks as
+failures too. This keeps the CI feed check a genuine gate instead of noise.
 
 ---
 

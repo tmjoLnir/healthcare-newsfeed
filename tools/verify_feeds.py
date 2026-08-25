@@ -30,9 +30,16 @@ from pathlib import Path
 import feedparser
 import yaml
 
+# Publishers that gate on IP reputation answer with these rather than serving
+# the feed. NEJM does it to GitHub Actions runners; BMJ does it to every
+# datacenter address we tried. That is a property of where the check runs, not
+# of the feed, so it is reported as BLOCKED and does not fail the sweep unless
+# --strict is passed.
+BLOCKED_CODES = {401, 403, 429}
+
 UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
-NOW = dt.datetime.now(dt.timezone.utc)
+NOW = dt.datetime.now(dt.UTC)
 TIMEOUT = 30
 
 # Set REQUESTS_CA_BUNDLE / SSL_CERT_FILE if behind a TLS-terminating proxy.
@@ -59,7 +66,7 @@ def entry_date(entry) -> dt.datetime | None:
     for key in ("published_parsed", "updated_parsed", "created_parsed"):
         value = entry.get(key)
         if value:
-            return dt.datetime(*value[:6], tzinfo=dt.timezone.utc)
+            return dt.datetime(*value[:6], tzinfo=dt.UTC)
     return None
 
 
@@ -73,7 +80,7 @@ def text_len(entry) -> int:
 
 def check_rss(url: str) -> dict:
     code, body = fetch(url)
-    row: dict = {"http": code, "ok": False}
+    row: dict = {"http": code, "ok": False, "blocked": code in BLOCKED_CODES}
     if code != 200:
         row["error"] = body.decode("utf-8", "replace")[:100].strip()
         return row
@@ -102,7 +109,8 @@ def check_odata(url: str) -> dict:
     """WHO's OData API needs explicit ordering; its default page is unsorted."""
     query = "?$orderby=PublicationDateAndTime%20desc&$top=20"
     code, body = fetch(url + query)
-    row: dict = {"http": code, "ok": False, "format": "odata"}
+    row: dict = {"http": code, "ok": False, "format": "odata",
+                 "blocked": code in BLOCKED_CODES}
     if code != 200:
         row["error"] = body.decode("utf-8", "replace")[:100].strip()
         return row
@@ -121,7 +129,7 @@ def check_odata(url: str) -> dict:
         raw = record.get("PublicationDateAndTime") or record.get("PublicationDate")
         if raw:
             try:
-                stamps.append(dt.datetime.fromisoformat(raw.replace("Z", "+00:00")))
+                stamps.append(dt.datetime.fromisoformat(raw))
             except ValueError:
                 pass
     if stamps:
@@ -139,7 +147,8 @@ def check_odata(url: str) -> dict:
 
 def verdict(row: dict) -> str:
     if not row.get("ok"):
-        return f"FAIL {row.get('error', '')[:44]}"
+        label = "BLOCKED" if row.get("blocked") else "FAIL"
+        return f"{label} http {row['http']} — {row.get('error', '')[:36]}"
     window = row.get("retention_days")
     if window is not None and window <= 8:
         return f"ok — {window}d window, daily poll required"
@@ -152,6 +161,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("config", nargs="?", default="config/sources.yaml", type=Path)
     ap.add_argument("--json", type=Path, help="also write raw results here")
+    ap.add_argument("--strict", action="store_true",
+                    help="treat host-level blocks as failures too")
     args = ap.parse_args()
 
     doc = yaml.safe_load(args.config.read_text())
@@ -163,7 +174,7 @@ def main() -> int:
     print(header)
     print("-" * len(header))
 
-    failed = 0
+    failed = blocked = 0
     for source in doc["sources"]:
         if not source.get("enabled", defaults.get("enabled", True)):
             continue
@@ -172,7 +183,10 @@ def main() -> int:
         row["key"] = source["key"]
         rows.append(row)
         if not row["ok"]:
-            failed += 1
+            if row.get("blocked") and not args.strict:
+                blocked += 1
+            else:
+                failed += 1
         print(f"{source['key']:<18} {row['http']:<5} {row.get('items', '-'):>5} "
               f"{row.get('newest', '-'):<11} {row.get('last_7d', '-'):>3} "
               f"{row.get('summary_chars', '-'):>6}  {verdict(row)}")
@@ -180,7 +194,11 @@ def main() -> int:
     if args.json:
         args.json.write_text(json.dumps(rows, indent=2))
 
-    print(f"\n{len(rows) - failed}/{len(rows)} sources healthy")
+    healthy = sum(1 for r in rows if r["ok"])
+    print(f"\n{healthy}/{len(rows)} sources healthy")
+    if blocked:
+        print(f"{blocked} blocked by host (IP reputation, not a feed fault) "
+              f"— rerun with --strict to treat these as failures")
     return 1 if failed else 0
 
 

@@ -10,7 +10,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.6"]
+# ruff is pinned: a minor bump adds rules and turns CI red on unchanged code.
+dev = ["pytest>=8.0", "ruff==0.16.4"]
 
 [project.scripts]
 newsfeed = "healthcare_newsfeed.cli:main"
