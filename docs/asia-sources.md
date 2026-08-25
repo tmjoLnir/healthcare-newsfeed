@@ -87,7 +87,7 @@ CloudFront, and a cache hit is answered with the whole page and no
 `Accept-Ranges`: eight consecutive requests on 2026-08-25 all came back 200 and
 7.5 MB, where the same request had returned 206 earlier the same day. The
 adapter therefore treats the range as an optimisation and the item cap as the
-contract — newest 200 records, whichever size arrives.
+contract — newest 40 records, whichever size arrives.
 `tools/moh_newsroom_probe.py` reports which of the two actually happened.
 
 ### Volume
@@ -317,7 +317,7 @@ either sweep replaces it.
    key kept so stored items keep their source.
 3. ~~Add `annals_sg`~~ — **done**, after the second sweep. Weight 1.0, `cc`.
 4. ~~Build the MOH adapter~~ — **done.** `sources/moh.py`, ~11 items a week
-   overall and ~1.5 of the steady kind, `link_only`, newest 200 records a poll.
+   overall and ~1.5 of the steady kind, `link_only`, newest 40 records a poll.
 5. **Get `www.channelnewsasia.com` and `www.koreabiomed.com` opened**, then
    re-run `config/candidates-asia.yaml`. CNA is the one gap neither sweep
    filled, and the only outstanding item on this survey.

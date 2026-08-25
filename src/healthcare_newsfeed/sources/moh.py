@@ -13,7 +13,7 @@ The page is 7.5 MB and the index starts about 4.3% in, ordered newest first,
 so the first 0.5 MB carries roughly four months of it. CloudFront grants that
 range only sometimes — see WINDOW_BYTES — so the adapter reads at most
 MAX_ITEMS records whichever size arrives, and parses a partial and a whole page
-the same way. Records look like this, embedded in a chunk of escaped JSON:
+the same way. That cap, not the byte range, is what bounds a poll. Records look like this, embedded in a chunk of escaped JSON:
 
     {"id":"/newsroom/<slug>","date":"$D2026-08-24T00:00:00.000Z",
      "plaintextTags":[{"category":"Category","selected":["Speeches"]}],
@@ -53,10 +53,23 @@ ITEM_BASE = "https://www.moh.gov.sg"
 WINDOW_BYTES = 500_000
 
 # The contract is this instead. Whether 0.5 MB or 7.5 MB arrives, the adapter
-# reads the newest MAX_ITEMS and stops — enough to cover months of a source
-# that publishes ~11 a week, and it keeps a poll from handing the store all
-# 8,367 archived records on the days the range is ignored.
-MAX_ITEMS = 200
+# reads the newest MAX_ITEMS and stops, which keeps a poll from handing the
+# store all 8,367 archived records on the days the range is ignored.
+#
+# 40 is chosen against how MOH actually publishes rather than against a span:
+# Parliamentary QAs land in same-day bursts — 22, 21, 19 and 17 items on the
+# four busiest days in one window — so a cap counted in items covers fewer days
+# than the ~11/week average suggests. Measured 2026-08-25, 40 reaches back 21
+# days, against 34 for 60 and 170 for 200.
+#
+# Three weeks is the balance. It is ample margin for a daily poll, and it keeps
+# the first poll's backlog inside recency()'s decay: the oldest item it can
+# introduce scores about 0.74 rather than the 0.0 that a four-month-old one
+# does. That matters because window() selects on when an item was *stored*, so
+# every record the first poll returns becomes a candidate for that week's
+# issue — and select() has no score floor, so a stale item still fills an
+# optional section when nothing else competes for it.
+MAX_ITEMS = 40
 
 # Next.js streams the payload as a sequence of JS string literals.
 PUSH_PREFIX = 'self.__next_f.push([1,"'

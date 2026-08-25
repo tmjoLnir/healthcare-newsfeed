@@ -176,14 +176,14 @@ sources:
     adapter: moh_newsroom
     weight: 1.0                # the health ministry of the audience's own country
     sections: [policy, also_reading]
-    retention_days: 170        # verified: 200 records, the adapter's cap
+    retention_days: 21         # verified: 40 records, the adapter's cap
     notes: >
       No feed exists — /rss, /feed.xml and /newsroom/rss.xml all 404. The
       newsroom page embeds its whole 8,367-item index in a Next.js flight
       payload, and the poller asks for the first 0.5 MB of it. CloudFront
       grants that range only sometimes and answers a cache hit with the whole
       7.5 MB, so the daily transfer swings between the two; the adapter reads
-      the newest 200 records either way. Verified from a GitHub Actions runner
+      the newest 40 records either way. Verified from a GitHub Actions runner
       on 2026-08-25 — 206, range granted, unlike from a residential path the
       same day — so unlike nejm and annals_sg this one is not egress-blocked. Titles are published in capitals and are recased on
       the way in; items carry no summary, because the index has none and
@@ -193,8 +193,11 @@ sources:
       Volume is about 11 items a week overall, but that is dominated by
       Parliamentary QA arriving in bursts on sitting days; the steady part
       is Press Releases and Forum Replies, roughly 1.5 a week. The first
-      poll ingests the whole window at once — about 170 days at 200 records —
-      and recency() decays it, exactly as it does bbc_health's 126 days.
+      poll ingests the whole window at once — three weeks at the adapter's
+      40-record cap — because window() selects on when an item was stored. The
+      cap is sized for that: at 200 records the first poll reached back four
+      months and could have filled the policy section with an April
+      Parliamentary QA scoring 0.0 on recency. See sources/moh.py.
 
   # --- Official (public domain, JSON not RSS) ------------------------------
   - key: who_news
