@@ -86,7 +86,7 @@ def test_a_limit_too_small_for_one_item_is_refused():
 
 
 def test_dates_read_in_the_issues_timezone():
-    """A channel published at 19:00 SGT should not be headed with yesterday."""
+    """An issue published at 19:00 SGT should not be headed with yesterday."""
     spec = resolve(template())
     midnight_sgt = dt.datetime(2026, 8, 24, 16, 0, tzinfo=dt.UTC)   # 2026-08-25 00:00 +08
 

@@ -24,6 +24,7 @@ from healthcare_newsfeed.telegram import (
 )
 
 TOKEN = "123456:AA-SECRET-TOKEN-VALUE"
+CHAT = "987654321"                 # a DM's chat id: a number, not an @name
 
 
 @pytest.fixture(autouse=True)
@@ -46,7 +47,7 @@ def responder(*responses):
 
 def client(handle, **kwargs) -> TelegramClient:
     transport = httpx.MockTransport(handle)
-    return TelegramClient(TOKEN, "@channel", client=httpx.Client(transport=transport),
+    return TelegramClient(TOKEN, CHAT, client=httpx.Client(transport=transport),
                           gap=0.0, **kwargs)
 
 
@@ -68,7 +69,7 @@ def test_a_message_is_posted_to_the_configured_chat():
     assert client(handle).send("hello") == {"message_id": 7}
 
     payload = json.loads(handle.seen[0].content)
-    assert payload["chat_id"] == "@channel"
+    assert payload["chat_id"] == CHAT
     assert payload["text"] == "hello"
     assert payload["parse_mode"] == "HTML"
     assert handle.seen[0].url.path.endswith("/sendMessage")
@@ -126,6 +127,33 @@ def test_a_bad_token_is_not_retried():
     assert len(handle.seen) == 1
 
 
+# --- reaching a DM ----------------------------------------------------------
+
+@pytest.mark.parametrize("status, description, expected", [
+    (403, "Forbidden: bot can't initiate conversation with a user", "/start"),
+    (403, "Forbidden: bot was blocked by the user", "unblock"),
+    (400, "Bad Request: chat not found", "numeric id"),
+])
+def test_a_chat_the_bot_cannot_reach_says_which_setup_step_is_missing(status, description,
+                                                                     expected):
+    """Telegram names the condition and stops; the fix is the useful half."""
+    handle = responder(httpx.Response(status, json={"ok": False, "description": description}))
+
+    with pytest.raises(TelegramError, match=expected):
+        client(handle).send("hello")
+    assert len(handle.seen) == 1
+
+
+def test_an_unrecognised_rejection_is_passed_through_unadorned():
+    handle = responder(httpx.Response(400, json={
+        "ok": False, "description": "Bad Request: message is too long"}))
+
+    with pytest.raises(TelegramError) as caught:
+        client(handle).send("hello")
+
+    assert str(caught.value) == "HTTP 400: Bad Request: message is too long"
+
+
 def test_a_response_that_is_not_json_is_reported_as_such():
     handle = responder(httpx.Response(502, text="<html>Bad Gateway</html>"))
 
@@ -161,11 +189,11 @@ def test_an_api_error_quoting_the_url_does_not_leak_the_token():
 
 def test_credentials_come_from_the_documented_variables(monkeypatch):
     monkeypatch.setenv(TOKEN_VAR, TOKEN)
-    monkeypatch.setenv(CHAT_VAR, "@channel")
+    monkeypatch.setenv(CHAT_VAR, CHAT)
 
     built = TelegramClient.from_env()
 
-    assert built.token == TOKEN and built.chat_id == "@channel"
+    assert built.token == TOKEN and built.chat_id == CHAT
 
 
 @pytest.mark.parametrize("present", [TOKEN_VAR, CHAT_VAR])
@@ -181,7 +209,7 @@ def test_a_missing_credential_points_at_the_setup_it_needs(monkeypatch, present)
 def test_a_blank_credential_counts_as_missing(monkeypatch):
     """An unset Actions secret interpolates to an empty string, not an absence."""
     monkeypatch.setenv(TOKEN_VAR, "  ")
-    monkeypatch.setenv(CHAT_VAR, "@channel")
+    monkeypatch.setenv(CHAT_VAR, CHAT)
 
     with pytest.raises(ConfigError):
         TelegramClient.from_env()

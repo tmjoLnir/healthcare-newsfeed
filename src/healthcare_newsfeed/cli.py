@@ -273,7 +273,7 @@ def build(args: argparse.Namespace) -> int:
 
 
 def publish(args: argparse.Namespace) -> int:
-    """Build the weekly issue and post it to the channel.
+    """Build the weekly issue and post it to the chat.
 
     The store is written only once the whole burst has landed. A digest goes
     out as several messages, and `mark_published` is what stops an item ever
@@ -304,7 +304,7 @@ def publish(args: argparse.Namespace) -> int:
         # fit() stops at the section floors rather than breaking them, so a
         # template whose `min`s cannot fit its budget overruns it. Posting
         # the extra message beats dropping a section the editor called
-        # mandatory, but it is not something to find out from the channel.
+        # mandatory, but it is not something to find out from the chat.
         if spec.max_messages is not None and len(messages) > spec.max_messages:
             print(f"warning: issue needs {len(messages)} messages against a "
                   f"max_messages of {spec.max_messages} — the section minimums "
@@ -322,7 +322,7 @@ def publish(args: argparse.Namespace) -> int:
             if sent:
                 print(f"{sent} message(s) already went out; issue {digest.issue} was NOT "
                       f"recorded, so a re-run will repost them — delete them from the "
-                      f"channel first", file=sys.stderr)
+                      f"chat first", file=sys.stderr)
             return 1
         finally:
             client.close()
@@ -333,7 +333,7 @@ def publish(args: argparse.Namespace) -> int:
 
         store.mark_published(digest.issue, items)
 
-    print(f"issue {digest.issue} published to {client.chat_id}: "
+    print(f"issue {digest.issue} published to chat {client.chat_id}: "
           f"{sent} message(s), {len(items)} items recorded")
     return 0
 

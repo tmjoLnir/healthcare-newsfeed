@@ -1,4 +1,4 @@
-"""tools/store_sync.sh — the guards that keep an empty store off the channel.
+"""tools/store_sync.sh — the guards that keep an empty store out of the chat.
 
 The script is what makes the schedules trustworthy: it carries the database
 between runs and refuses, loudly, in every case where continuing would either

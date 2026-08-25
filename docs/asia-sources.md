@@ -261,8 +261,8 @@ China's school myopia programme and dementia burden trends in China.
 Licence is **CC BY-NC-SA 4.0**, open access since April 2023 and applied
 retroactively. That is a better licence than most of the set, but not the same
 shape as the CC-BY-ND the other `cc` sources carry: non-commercial fits a free
-Telegram channel, but *share-alike* is a real condition. The row is `cc`, and
-its note says to downgrade to `link_only` if the channel ever monetises.
+Telegram digest, but *share-alike* is a real condition. The row is `cc`, and
+its note says to downgrade to `link_only` if the digest is ever monetised.
 
 Roughly one item in ten is an administrative "Continuing Medical Education"
 post with a 178-character body — the scorer deprioritises it naturally, and the

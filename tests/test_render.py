@@ -1,8 +1,8 @@
 """Rendering a Digest into Telegram messages.
 
 The rules under test are the ones the README promises a reader and a
-publisher: how much of each item may go out, what a paywall looks like from
-the channel, and that an issue never arrives as broken markup or a message
+publisher: how much of each item may go out, what a paywall looks like in
+the chat, and that an issue never arrives as broken markup or a message
 the API will reject.
 """
 
