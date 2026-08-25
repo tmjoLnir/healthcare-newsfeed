@@ -8,11 +8,11 @@ pre-med and medical-school applicants, so selection favours what actually helps
 at interview — ethics, health policy, global health and new treatments — over
 breaking-news volume.
 
-> **Status: nearly there.** `newsfeed poll` and `newsfeed build` work end to
-> end — all fourteen sources fetch and persist daily, and a week's candidates
-> cluster, rank and fill the issue's sections. Only rendering and posting to
-> Telegram remain, so `publish` says so rather than pretending. See
-> [Roadmap](#roadmap).
+> **Status: complete end to end.** All fourteen sources fetch and persist
+> daily, a week's candidates cluster, rank and fill the issue's sections, and
+> `newsfeed publish` renders the issue and posts it to the channel. Preview
+> any week with `newsfeed publish --dry-run`, which needs no bot token. What
+> is left is a judgement call rather than a gap — see [Roadmap](#roadmap).
 
 ---
 
@@ -208,6 +208,72 @@ Licence drives how much text each item may carry, and the renderer enforces it:
 
 Paywalled sources are labelled inline so readers know before they click.
 
+The rule is one line of code rather than a convention to remember:
+**licence sets a ceiling, the section's style sets the ask, and the extract
+is the smaller of the two.**
+
+| Section style | Asks for | link-only | CC / public domain |
+|---|---|---|---|
+| `headline` | nothing | title + link | title + link |
+| `short` | 180 ch | 180 ch | 180 ch |
+| `long` | 400 ch | **200 ch** | 400 ch |
+| `extract` | 900 ch | **200 ch** | 900 ch |
+
+So the same explainer slot carries 900 characters of a Conversation article
+and 200 of a STAT one, without either section needing to know which source
+filled it. A summary trimmed below 60 characters is dropped entirely — three
+words and an ellipsis is worse than a headline and a link.
+
+---
+
+## What gets posted
+
+An issue arrives as an ordered burst of messages rather than one, because
+Telegram caps a message at 4,096 characters. Splits fall between items and
+repeat the section heading with `(cont.)`, so a reader landing on the second
+message still knows which block they are in. Nothing is truncated after the
+fact: each item is composed to fit the room it has, because cutting assembled
+HTML lands inside a tag and Telegram rejects the whole message rather than
+the broken span.
+
+### Publishers put their own boilerplate first
+
+Two shapes of it, and the renderer removes both:
+
+- **The journals lead with a citation.** Nature Medicine ships
+  `Nature Medicine, Published online: 24 August 2026; doi:10.1038/…` and then
+  the abstract. Printed as-is that reads as broken wherever it appears, so
+  the citation is stripped and what follows is the summary. NEJM's feed is
+  citation and *nothing else* — 87 characters where the description belongs —
+  so nothing remains and the item renders title + link, which is the right
+  answer for it. It falls out of the general rule rather than needing a
+  special case.
+- **The Conversation leads with its hero image's credit.** Every article
+  opens `New Africa/Shutterstock.com …`, and the explainer section carries
+  more text than any other, so it would open on a photo agency. A credit is
+  matched only with its `/` separator — a bare agency name would fire on a
+  wire report attributed to Reuters.
+
+Both run at render time, not in the adapter: a `RawItem` is the item as
+found, and stripping upstream would remove evidence the scorer ranks on.
+
+### Failures
+
+A digest is several messages, and `publish` writes to the store only once all
+of them have landed. `mark_published` is what stops an item ever being
+carried again, so recording a half-posted issue would retire the items in the
+sections that never arrived — invisibly and permanently. A duplicate post is
+visible and a human can delete it; a lost ethics section is neither. So a
+partial failure records nothing, says how far it got, and exits non-zero.
+
+Flood limits are waited out rather than dropped: Telegram answers 429 with a
+`retry_after`, and half a digest is worse than a slow one. A rejected message
+— bad HTML, a bad token — is not retried, because it will fail identically
+however many times it is sent.
+
+The bot token is in the URL, not a header, so every error out of `telegram.py`
+is redacted before it reaches a log.
+
 ---
 
 ## Getting started
@@ -247,7 +313,7 @@ It exits non-zero if an enabled source fails, so it can gate a deployment.
 | `newsfeed poll` | Fetch every due source into the store. Run daily. |
 | `newsfeed verify` | Check feed health (wraps `tools/verify_feeds.py`). |
 | `newsfeed build` | Assemble the issue for a week and print it. Writes nothing. |
-| `newsfeed publish` | *Not built yet* — needs `digest/render.py`, `telegram.py`. |
+| `newsfeed publish` | Build the issue, post it, and record what went out. Run weekly. |
 | `python tools/verify_feeds.py` | Check feed health. |
 
 ```
@@ -279,6 +345,23 @@ Due-ness comes from `poll_hours` against the store's record of when each source
 last succeeded, so a run repeated within the day is nearly free. A *failed*
 poll does not start that clock — a broken source is retried on the next run
 rather than waiting out its interval.
+
+```
+$ newsfeed publish
+This Week in Medicine — Issue 12: 14 of 173 candidates, 2 message(s)
+issue 12 published to @channel: 2 message(s), 14 items recorded
+```
+
+`--dry-run` renders the issue to stdout and posts nothing — it needs no bot
+token, so it works before the channel exists. `--week` publishes a past week,
+`--issue` overrides the numbering, and `--config`, `--template` and `--db`
+behave as they do for `build`.
+
+**`build` and `publish` assemble the same issue.** They share one function, so
+what `build` prints with its scores is what `publish` posts; the difference is
+that `build` shows the ranking and `publish` shows the formatting. Preview
+with `publish --dry-run` when the question is how the issue reads, and with
+`build` when it is why an item is in it.
 
 ### Deployment
 
@@ -329,11 +412,11 @@ src/healthcare_newsfeed/
   store.py            SQLite persistence (items · issues · polls)
   sources/            base.py (protocol) · rss.py · who.py
   pipeline/           dedupe.py · score.py · select.py
-  digest/             template.py · render.py
-  telegram.py         Bot API client
+  digest/             template.py (section specs) · render.py (Telegram HTML)
+  telegram.py         Bot API client — sendMessage, retries, redaction
   cli.py              poll · build · publish · verify
 tools/
-  verify_feeds.py     feed health checker (working)
+  verify_feeds.py     feed health checker
 tests/                offline, fixture-driven
 ```
 
@@ -349,5 +432,11 @@ tests/                offline, fixture-driven
 - [x] WHO OData adapter — both collections
 - [x] `newsfeed poll`: config loading and the daily run
 - [x] Dedupe, scoring, section selection
-- [ ] Telegram rendering and publishing
-- [ ] Decide Singapore coverage — scrape MOH, or rely on The Conversation ID
+- [x] Telegram rendering and publishing
+
+Open, and a judgement call rather than a gap:
+
+- [ ] Decide Singapore coverage — scrape MOH's Isomer pages, or keep relying
+      on The Conversation Indonesia as the regional signal
+- [ ] Wire up a store that outlives the runner before trusting the schedules
+      (see [Deployment](#deployment))

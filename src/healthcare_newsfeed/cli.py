@@ -16,12 +16,15 @@ import sys
 from pathlib import Path
 
 from .config import ConfigError, load_digest_template, load_sources
+from .digest.render import render
+from .digest.template import IssueSpec, resolve
 from .models import Digest, Source
 from .pipeline.dedupe import cluster
 from .pipeline.score import score
 from .pipeline.select import select
 from .sources import ADAPTERS, Adapter, FeedError
 from .store import Store
+from .telegram import DryRunClient, TelegramClient, TelegramError
 
 DEFAULT_CONFIG = Path("config/sources.yaml")
 DEFAULT_TEMPLATE = Path("config/digest.yaml")
@@ -35,6 +38,10 @@ VERIFY_SCRIPT = Path("tools/verify_feeds.py")
 # hold four. The grace period makes the check answer "has it been about a
 # day?" rather than "has it been 24 hours to the second?".
 DUE_GRACE = dt.timedelta(hours=1)
+
+
+class NothingToPublish(RuntimeError):
+    """The week holds no candidates — an empty store, or a poll that never ran."""
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -64,8 +71,15 @@ def main(argv: list[str] | None = None) -> int:
     build_parser.set_defaults(run=build)
 
     publish_parser = commands.add_parser("publish", help="build and post the weekly issue")
-    publish_parser.add_argument("--dry-run", action="store_true")
-    publish_parser.set_defaults(run=_unbuilt("publish", "digest/render.py, telegram.py"))
+    publish_parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    publish_parser.add_argument("--template", type=Path, default=DEFAULT_TEMPLATE)
+    publish_parser.add_argument("--db", type=Path, help=f"defaults to $NEWSFEED_DB or {DEFAULT_DB}")
+    publish_parser.add_argument("--week", help="ISO date inside the week to publish (default: today)")
+    publish_parser.add_argument("--issue", type=int, help="default: one past the last published")
+    publish_parser.add_argument("--dry-run", action="store_true",
+                                help="render and print the issue without posting, "
+                                     "and without recording it as published")
+    publish_parser.set_defaults(run=publish)
 
     verify_parser = commands.add_parser("verify", help="check feed health")
     verify_parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
@@ -201,43 +215,116 @@ def week_bounds(args: argparse.Namespace) -> tuple[dt.datetime, dt.datetime]:
     return end - dt.timedelta(days=7), end
 
 
-def build(args: argparse.Namespace) -> int:
-    """Assemble the issue for a week and print it, writing nothing.
+def assemble(args: argparse.Namespace, store: Store) -> tuple[Digest, dict, IssueSpec, int]:
+    """Run the pipeline for one week: the digest, and what shaped it.
 
-    The listing below is a working view, not the published one: licence
-    limits, extract lengths and Telegram's formatting are digest/render.py's
-    job, and nothing here is fit to post.
+    Shared by `build` and `publish` so the issue printed by one is the issue
+    posted by the other. Raises NothingToPublish when the week holds no
+    candidates at all, which is a different failure from a week that holds
+    some and fills no section: the first means the poll is not running, the
+    second means it is and the week was thin.
     """
     sources = {source.key: source for source in load_sources(args.config)}
     template = load_digest_template(args.template)
+    spec = resolve(template)
     start, end = week_bounds(args)
 
-    with Store(database_path(args)) as store:
-        store.migrate()
-        candidates = store.window(start, end)
-        issue = args.issue if args.issue is not None else store.next_issue()
-
+    candidates = store.window(start, end)
+    issue = args.issue if args.issue is not None else store.next_issue()
     if not candidates:
-        print(f"no candidates stored for {start:%Y-%m-%d} to "
-              f"{end - dt.timedelta(seconds=1):%Y-%m-%d} — has `newsfeed poll` run?",
-              file=sys.stderr)
-        return 1
+        raise NothingToPublish(
+            f"no candidates stored for {start:%Y-%m-%d} to "
+            f"{end - dt.timedelta(seconds=1):%Y-%m-%d} — has `newsfeed poll` run?"
+        )
 
     cluster(candidates)
     score(candidates, sources)
     digest = select(candidates, template, issue, sources, week=(start, end))
+    return digest, sources, spec, len(candidates)
 
-    _print_digest(digest, template, len(candidates))
+
+def build(args: argparse.Namespace) -> int:
+    """Assemble the issue for a week and print it, writing nothing.
+
+    The listing below is a working view rather than the published one — it
+    shows the scores that put each item where it is. For what actually goes
+    out, formatted and licence-capped, use `newsfeed publish --dry-run`.
+    """
+    with Store(database_path(args)) as store:
+        store.migrate()
+        try:
+            digest, _, spec, considered = assemble(args, store)
+        except NothingToPublish as exc:
+            print(exc, file=sys.stderr)
+            return 1
+
+    _print_digest(digest, spec, considered)
     if not digest.sections:
         print("nothing qualified for any section", file=sys.stderr)
         return 1
     return 0
 
 
-def _print_digest(digest: Digest, template: dict, considered: int) -> None:
-    title = template["issue"]["title"]
+def publish(args: argparse.Namespace) -> int:
+    """Build the weekly issue and post it to the channel.
+
+    The store is written only once the whole burst has landed. A digest goes
+    out as several messages, and `mark_published` is what stops an item ever
+    being carried again — so recording a half-posted issue would retire the
+    items in the sections that never arrived, invisibly and permanently.
+    Reposting a duplicate is visible and a human can delete it; losing the
+    ethics section is neither. So a partial failure records nothing, says
+    how far it got, and exits non-zero.
+    """
+    with Store(database_path(args)) as store:
+        store.migrate()
+        try:
+            digest, sources, spec, considered = assemble(args, store)
+        except NothingToPublish as exc:
+            print(exc, file=sys.stderr)
+            return 1
+
+        if not digest.sections:
+            print("nothing qualified for any section — not posting an empty issue",
+                  file=sys.stderr)
+            return 1
+
+        messages = render(digest, sources, spec)
+        items = [item for section in digest.sections for item in section.items]
+        print(f"{spec.title} — Issue {digest.issue}: {len(items)} of {considered} "
+              f"candidates, {len(messages)} message(s)")
+
+        client = DryRunClient() if args.dry_run else TelegramClient.from_env()
+        sent = 0
+        try:
+            for message in messages:
+                client.send(message, disable_preview=True)
+                sent += 1
+        except TelegramError as exc:
+            print(f"posting failed on message {sent + 1} of {len(messages)}: {exc}",
+                  file=sys.stderr)
+            if sent:
+                print(f"{sent} message(s) already went out; issue {digest.issue} was NOT "
+                      f"recorded, so a re-run will repost them — delete them from the "
+                      f"channel first", file=sys.stderr)
+            return 1
+        finally:
+            client.close()
+
+        if args.dry_run:
+            print(f"dry run — nothing was posted, and issue {digest.issue} was not recorded")
+            return 0
+
+        store.mark_published(digest.issue, items)
+
+    print(f"issue {digest.issue} published to {client.chat_id}: "
+          f"{sent} message(s), {len(items)} items recorded")
+    return 0
+
+
+def _print_digest(digest: Digest, spec: IssueSpec, considered: int) -> None:
     covers = digest.week_end - dt.timedelta(seconds=1)      # end is exclusive
-    print(f"{title} — Issue {digest.issue}")
+    print(f"{spec.title} — Issue {digest.issue}")
     print(f"{digest.week_start:%Y-%m-%d} to {covers:%Y-%m-%d}")
     print("─" * 58)
 
@@ -249,8 +336,8 @@ def _print_digest(digest: Digest, template: dict, considered: int) -> None:
             print(f"  {item.score:6.3f}  {item.title}")
             print(f"          {item.source_key} · {item.canonical_url}")
 
-    empty = [spec["key"] for spec in template["sections"]
-             if spec["key"] not in {section.key for section in digest.sections}]
+    carried = {section.key for section in digest.sections}
+    empty = [section.key for section in spec.sections if section.key not in carried]
     print(f"\n{published} of {considered} candidates published")
     if empty:
         # min: 0 sections are meant to disappear rather than carry filler.
@@ -271,14 +358,6 @@ def verify(args: argparse.Namespace) -> int:
     if args.strict:
         command.append("--strict")
     return subprocess.run(command, check=False).returncode
-
-
-def _unbuilt(command: str, waiting_on: str):
-    def run(args: argparse.Namespace) -> int:
-        print(f"`newsfeed {command}` is not built yet — it needs {waiting_on}. "
-              f"See the roadmap in README.md.", file=sys.stderr)
-        return 2
-    return run
 
 
 if __name__ == "__main__":
