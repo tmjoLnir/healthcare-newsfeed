@@ -219,6 +219,11 @@ class Store:
         ).fetchone()
         return _from_iso(row["last_success"]) if row else None
 
+    def next_issue(self) -> int:
+        """The number the next published issue would carry."""
+        row = self.conn.execute("SELECT max(issue) AS latest FROM issues").fetchone()
+        return (row["latest"] or 0) + 1
+
     def close(self) -> None:
         self.conn.close()
 

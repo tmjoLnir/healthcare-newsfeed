@@ -8,10 +8,11 @@ pre-med and medical-school applicants, so selection favours what actually helps
 at interview — ethics, health policy, global health and new treatments — over
 breaking-news volume.
 
-> **Status: half-built.** `newsfeed poll` works end to end — all fourteen
-> sources fetch, deduplicate and persist on a daily schedule. Selection and
-> publishing are specified stubs, so `build` and `publish` say so rather than
-> pretending. See [Roadmap](#roadmap).
+> **Status: nearly there.** `newsfeed poll` and `newsfeed build` work end to
+> end — all fourteen sources fetch and persist daily, and a week's candidates
+> cluster, rank and fill the issue's sections. Only rendering and posting to
+> Telegram remain, so `publish` says so rather than pretending. See
+> [Roadmap](#roadmap).
 
 ---
 
@@ -93,6 +94,25 @@ weight, topic fit, durability (explainers hold their value across a week;
 breaking news does not, and is penalised accordingly), cluster size and
 readability. `pipeline/select.py` then fills each section under its quota,
 never repeating an item carried by an earlier issue.
+
+Each signal is a small named function with a documented range, and the weights
+at the top of `score.py` are the whole tuning surface. That matters more than
+sophistication: when an issue carries the wrong story, the only useful question
+is which signal put it there.
+
+`pipeline/dedupe.py` runs first. Its exact pass — canonical URLs — already
+happens on every insert; the near pass groups titles that tell one story
+within three weeks of each other. Three weeks reads generous for a weekly
+digest, and the sources argue for it: WHO files a fresh report on the same
+outbreak every week or two, and NEJM ran one HIV trial a fortnight before The
+Lancet's companion paper. Narrower, and an issue carries the same epidemic
+twice. Allocation then takes one item per cluster, so the rest of that story
+cannot come back in another section.
+
+Sections are filled in two passes over the template — each gets its `min`
+before any gets its second choice. One pass would let an early greedy section
+take an item a later thin one was relying on, which is the crowding-out the
+per-section quotas exist to prevent.
 
 ---
 
@@ -226,7 +246,7 @@ It exits non-zero if an enabled source fails, so it can gate a deployment.
 |---|---|
 | `newsfeed poll` | Fetch every due source into the store. Run daily. |
 | `newsfeed verify` | Check feed health (wraps `tools/verify_feeds.py`). |
-| `newsfeed build` | *Not built yet* — needs `pipeline/score.py`, `pipeline/select.py`. |
+| `newsfeed build` | Assemble the issue for a week and print it. Writes nothing. |
 | `newsfeed publish` | *Not built yet* — needs `digest/render.py`, `telegram.py`. |
 | `python tools/verify_feeds.py` | Check feed health. |
 
@@ -328,6 +348,6 @@ tests/                offline, fixture-driven
 - [x] SQLite store — canonical-URL identity, weekly window
 - [x] WHO OData adapter — both collections
 - [x] `newsfeed poll`: config loading and the daily run
-- [ ] Dedupe, scoring, section selection
+- [x] Dedupe, scoring, section selection
 - [ ] Telegram rendering and publishing
 - [ ] Decide Singapore coverage — scrape MOH, or rely on The Conversation ID

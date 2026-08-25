@@ -273,12 +273,11 @@ def test_database_path_prefers_the_flag_then_the_environment(monkeypatch, tmp_pa
 
 # --- the commands that are not built yet -------------------------------------
 
-@pytest.mark.parametrize("command,waiting_on", [("build", "score.py"), ("publish", "render.py")])
-def test_unbuilt_commands_say_so(command, waiting_on, capsys):
-    assert main([command]) == 2
+def test_publish_says_what_it_is_waiting_on(capsys):
+    assert main(["publish"]) == 2
 
     error = capsys.readouterr().err
-    assert "not built yet" in error and waiting_on in error
+    assert "not built yet" in error and "render.py" in error
 
 
 def test_verify_shells_out_to_the_standalone_checker(monkeypatch, capsys):
@@ -308,3 +307,69 @@ def _source(key: str):
     from healthcare_newsfeed.models import Licence, Source
     return Source(key=key, name=key, url=f"https://{key}.test/feed", adapter="fake",
                   licence=Licence.LINK_ONLY, weight=1.0, sections=("also_reading",))
+
+
+# --- build -------------------------------------------------------------------
+
+def stocked(db_path: str, adapter, config_path: str) -> None:
+    adapter.responses = {"bbc": [
+        RawItem("bbc", "Why the NHS waiting list keeps growing", "https://bbc.test/1", NOW,
+                "A policy explainer about NHS funding and reform."),
+        RawItem("bbc", "Consent and autonomy at the end of life", "https://bbc.test/2", NOW,
+                "An ethics discussion of consent."),
+        RawItem("bbc", "Ebola outbreak update from the DRC", "https://bbc.test/3", NOW, ""),
+    ]}
+    main(["poll", "--config", config_path, "--db", db_path])
+
+
+def test_build_assembles_an_issue(adapter, config, db, tmp_path, capsys):
+    path = config("bbc", bbc={"sections": ["story_of_week", "also_reading"]})
+    stocked(db, adapter, path)
+
+    code = main(["build", "--config", path, "--db", db])
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "This Week in Medicine — Issue 1" in out
+    assert "Story of the week" in out
+    assert "candidates published" in out
+
+
+def test_build_writes_nothing(adapter, config, db):
+    path = config("bbc", bbc={"sections": ["story_of_week", "also_reading"]})
+    stocked(db, adapter, path)
+
+    main(["build", "--config", path, "--db", db])
+
+    with Store(db) as store:
+        assert store.conn.execute("SELECT count(*) FROM issues").fetchone()[0] == 0
+        assert store.next_issue() == 1
+
+
+def test_build_says_so_when_the_store_is_empty(adapter, config, db, capsys):
+    assert main(["build", "--config", config("bbc"), "--db", db]) == 1
+    assert "has `newsfeed poll` run?" in capsys.readouterr().err
+
+
+def test_build_takes_the_week_from_the_flag(adapter, config, db, capsys):
+    path = config("bbc", bbc={"sections": ["story_of_week", "also_reading"]})
+    stocked(db, adapter, path)
+
+    assert main(["build", "--config", path, "--db", db, "--week", "1999-01-01"]) == 1
+    assert "1998-12-26 to 1999-01-01" in capsys.readouterr().err
+
+
+def test_build_rejects_a_week_that_is_not_a_date(adapter, config, db, capsys):
+    assert main(["build", "--config", config("bbc"), "--db", db, "--week", "last"]) == 2
+    assert "ISO date" in capsys.readouterr().err
+
+
+def test_build_numbers_the_issue_after_the_last_published(adapter, config, db, capsys):
+    path = config("bbc", bbc={"sections": ["story_of_week", "also_reading"]})
+    stocked(db, adapter, path)
+    with Store(db) as store:
+        store.mark_published(7, [])
+
+    main(["build", "--config", path, "--db", db])
+
+    assert "Issue 8" in capsys.readouterr().out

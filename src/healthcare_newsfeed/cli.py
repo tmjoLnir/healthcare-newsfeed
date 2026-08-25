@@ -15,12 +15,16 @@ import subprocess
 import sys
 from pathlib import Path
 
-from .config import ConfigError, load_sources
-from .models import Source
+from .config import ConfigError, load_digest_template, load_sources
+from .models import Digest, Source
+from .pipeline.dedupe import cluster
+from .pipeline.score import score
+from .pipeline.select import select
 from .sources import ADAPTERS, Adapter, FeedError
 from .store import Store
 
 DEFAULT_CONFIG = Path("config/sources.yaml")
+DEFAULT_TEMPLATE = Path("config/digest.yaml")
 DEFAULT_DB = Path("data/newsfeed.db")
 VERIFY_SCRIPT = Path("tools/verify_feeds.py")
 
@@ -52,8 +56,12 @@ def main(argv: list[str] | None = None) -> int:
     poll_parser.set_defaults(run=poll)
 
     build_parser = commands.add_parser("build", help="assemble a digest without publishing")
-    build_parser.add_argument("--week", help="ISO date inside the week to build")
-    build_parser.set_defaults(run=_unbuilt("build", "pipeline/score.py, pipeline/select.py"))
+    build_parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    build_parser.add_argument("--template", type=Path, default=DEFAULT_TEMPLATE)
+    build_parser.add_argument("--db", type=Path, help=f"defaults to $NEWSFEED_DB or {DEFAULT_DB}")
+    build_parser.add_argument("--week", help="ISO date inside the week to build (default: today)")
+    build_parser.add_argument("--issue", type=int, help="default: one past the last published")
+    build_parser.set_defaults(run=build)
 
     publish_parser = commands.add_parser("publish", help="build and post the weekly issue")
     publish_parser.add_argument("--dry-run", action="store_true")
@@ -166,6 +174,87 @@ def poll(args: argparse.Namespace) -> int:
         print(f"{len(fatal)} source(s) failed: {', '.join(fatal)}", file=sys.stderr)
         return 1
     return 0
+
+
+def week_bounds(args: argparse.Namespace) -> tuple[dt.datetime, dt.datetime]:
+    """The seven days ending at the end of --week, or ending now.
+
+    The end is exclusive, and lands on a whole second past the last moment
+    meant to be included: window() is half-open and the store keeps
+    timestamps to the second, so an end of exactly "now" would drop anything
+    stored during the current second — which is every item, if someone runs
+    poll and build back to back.
+
+    UTC throughout, matching the store. digest.yaml's Asia/Singapore timezone
+    governs when an issue is published and how its dates read, which is
+    render's business rather than the window's.
+    """
+    if not args.week:
+        last = dt.datetime.now(dt.UTC).replace(microsecond=0)
+    else:
+        try:
+            day = dt.date.fromisoformat(args.week)
+        except ValueError as exc:
+            raise ConfigError(f"--week wants an ISO date like 2026-08-23, not {args.week!r}") from exc
+        last = dt.datetime.combine(day, dt.time.max, tzinfo=dt.UTC).replace(microsecond=0)
+    end = last + dt.timedelta(seconds=1)
+    return end - dt.timedelta(days=7), end
+
+
+def build(args: argparse.Namespace) -> int:
+    """Assemble the issue for a week and print it, writing nothing.
+
+    The listing below is a working view, not the published one: licence
+    limits, extract lengths and Telegram's formatting are digest/render.py's
+    job, and nothing here is fit to post.
+    """
+    sources = {source.key: source for source in load_sources(args.config)}
+    template = load_digest_template(args.template)
+    start, end = week_bounds(args)
+
+    with Store(database_path(args)) as store:
+        store.migrate()
+        candidates = store.window(start, end)
+        issue = args.issue if args.issue is not None else store.next_issue()
+
+    if not candidates:
+        print(f"no candidates stored for {start:%Y-%m-%d} to "
+              f"{end - dt.timedelta(seconds=1):%Y-%m-%d} — has `newsfeed poll` run?",
+              file=sys.stderr)
+        return 1
+
+    cluster(candidates)
+    score(candidates, sources)
+    digest = select(candidates, template, issue, sources, week=(start, end))
+
+    _print_digest(digest, template, len(candidates))
+    if not digest.sections:
+        print("nothing qualified for any section", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _print_digest(digest: Digest, template: dict, considered: int) -> None:
+    title = template["issue"]["title"]
+    covers = digest.week_end - dt.timedelta(seconds=1)      # end is exclusive
+    print(f"{title} — Issue {digest.issue}")
+    print(f"{digest.week_start:%Y-%m-%d} to {covers:%Y-%m-%d}")
+    print("─" * 58)
+
+    published = 0
+    for section in digest.sections:
+        print(f"\n{section.heading}")
+        for item in section.items:
+            published += 1
+            print(f"  {item.score:6.3f}  {item.title}")
+            print(f"          {item.source_key} · {item.canonical_url}")
+
+    empty = [spec["key"] for spec in template["sections"]
+             if spec["key"] not in {section.key for section in digest.sections}]
+    print(f"\n{published} of {considered} candidates published")
+    if empty:
+        # min: 0 sections are meant to disappear rather than carry filler.
+        print(f"sections with nothing to carry: {', '.join(empty)}")
 
 
 def verify(args: argparse.Namespace) -> int:
