@@ -180,7 +180,12 @@ Checked directly; do not retry without re-testing.
 
 ---
 
-## Not verifiable from this network
+## Not verifiable from this network — first sweep
+
+*Superseded in part: seven of these were opened later the same day. See
+[Second sweep](#second-sweep--2026-08-25-after-seven-hosts-were-opened) for
+what they turned out to be — `annals.edu.sg` among them, now a configured
+source.*
 
 This session's egress policy answers `403` to CONNECT for most hosts, which is a
 property of where the check ran, not of the feeds — the same distinction

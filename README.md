@@ -483,6 +483,16 @@ Both workflows share one `concurrency` group, because the file is
 read-modify-write and two overlapping runs would lose whichever finished
 first.
 
+**Two sources need an egress address the runner does not have.** NEJM and
+Annals both answer GitHub Actions runners with 403 while serving normally from
+an ordinary network — confirmed in two consecutive CI runs on 2026-08-25.
+`poll` classifies 401/403/429 as *blocked* rather than *failed*, so neither
+breaks the daily run: they contribute nothing, and the issue is assembled from
+the other fifteen. Restoring them means giving the poller a residential or
+proxied egress address, or a self-hosted runner. Until then `poll`'s summary
+line is where to notice it — a source blocked every day is a source that is not
+in the digest, and nothing else will say so.
+
 [docs/persistent-store.md](docs/persistent-store.md) has the sizing that
 settled this, the free options that were compared, and how to operate it.
 
@@ -549,10 +559,20 @@ tests/                offline, fixture-driven
 - [x] Telegram rendering and publishing
 - [x] A store that outlives the runner — a GitHub Release asset, sized and
       chosen in [docs/persistent-store.md](docs/persistent-store.md)
+- [x] Singapore and Asia coverage decided and shipped — Annals plus the two
+      Lancet regional titles, and The Conversation Indonesia moved to its
+      health section. Surveyed, measured and costed in
+      [docs/asia-sources.md](docs/asia-sources.md), including what was
+      rejected and why
 
-Open, and a judgement call rather than a gap:
+Open, and judgement calls rather than gaps:
 
-- [ ] Decide Singapore and Asia coverage. [docs/asia-sources.md](docs/asia-sources.md)
-      surveys it: two Lancet regional titles and The Conversation Indonesia's
-      health feed are verified and need only config rows, MOH needs a small
-      adapter, and the Straits Times was measured and rejected
+- [ ] An MOH adapter. No feed exists, but the newsroom page embeds a complete
+      8,367-item index and the host honours byte ranges, so one 0.5 MB request
+      reads four months of it — `tools/moh_newsroom_probe.py` demonstrates it.
+      About 1.5 usable items a week, `link_only`. Worth checking MOH resolves
+      from an Actions runner before building it; two sources already do not
+- [ ] Egress that reaches NEJM, Annals and CNA. Two configured sources are
+      blocked from Actions runners today, and CNA — the one Singapore
+      general-news outlet with per-section RSS, unpaywalled — could not be
+      reached to evaluate at all
