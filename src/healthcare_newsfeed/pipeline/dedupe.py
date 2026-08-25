@@ -153,21 +153,45 @@ def _same_story(left: frozenset[str], right: frozenset[str]) -> bool:
 # rollout" are more alike for sharing "vaccine" — but two items are not the
 # same running story merely because both concern cancer, and "stat" appears
 # only because STAT brands its metered items "STAT+:".
+#
+# The second group names who acted rather than what happened. A regulator, a
+# ministry or an administration recurs across stories with nothing else in
+# common — measured on one week's issue, "fda" was carried by a nomination
+# fight, a hospice-dosage study and an AI-regulation plan, and "trump" by
+# that nomination and an unrelated lawsuit over dietary guidelines. Counting
+# those as one subject blocks the third story on a rule meant for the first.
+# "who" earns its place twice over, naming both the agency and the pronoun.
 _GENERIC = frozenset({
     "health", "care", "patients", "patient", "disease", "diseases", "virus",
     "viral", "vaccine", "vaccines", "cancer", "drug", "drugs", "treatment",
     "treatments", "trial", "trials", "therapy", "risk", "doctors", "medical",
     "medicine", "research", "hospital", "hospitals", "guidelines", "stat",
+    # actors, not subjects
+    "who", "fda", "cdc", "nih", "nhs", "hhs", "ema", "mhra", "ecdc", "moh",
+    "trump", "administration", "government", "organization", "organisation",
 })
 
-SUBJECT_MAX_DF = 0.06
+SUBJECT_MAX_DF = 0.10
 """How common a word may be and still name a subject.
 
-Measured over one week of real candidates (361 items): "ebola" appears in 20
-titles (5.5%), "bundibugyo" and "congo" in 14, "cancer" and "vaccine" in 12.
-"health" appears in 38 (10.5%) and names nothing in particular. The cut falls
-between them, and errs generous — a word wrongly counted as a subject defers
-one item to next week's issue, which is the cheap direction to be wrong in.
+A backstop against runaway words, not the thing that separates a subject
+from a field of medicine — `_GENERIC` does that, and does it on meaning
+rather than on frequency, because frequency cannot. Measured over one real
+week (324 candidates), the words `_GENERIC` does not already name top out at
+"ebola" in 20 titles (6.2%), "who" in 17 and "bundibugyo" and "congo" in 14,
+while the field words interleave with them — "vaccine" and "cancer" appear in
+12 apiece, below every one of those. No cut through that ordering keeps
+"ebola" and drops "vaccine". So the cut is placed above the whole band, at
+"health" (37 titles, 11.4%), and `_GENERIC` carries the distinction.
+
+Erring generous is the cheap direction: a word wrongly counted as a subject
+defers one item to next week's issue, while a word wrongly discarded lets one
+story fill the whole of this one — the failure the cap exists to prevent, and
+the one a tighter cut caused. At 0.06 the ceiling fell to 19 in a 324-item
+week and "ebola" was discarded by a single title, in the week of the largest
+Ebola outbreak on record. A story word is common *because* its story is
+running, so a proportional cut is at its tightest exactly when the cap
+matters most; the margin here has to absorb that.
 """
 
 
@@ -180,7 +204,7 @@ def subjects(items: list[Item]) -> dict[str, frozenset[str]]:
     passing mentions, it is a subject then too, which is the point.
 
     Being a proportion, it needs a corpus to be a proportion of: below about
-    34 items the ceiling rounds down to one, no word is shared, and this
+    20 items the ceiling rounds down to one, no word is shared, and this
     returns nothing anyone can be capped on. That is the right answer rather
     than a gap — a window that thin means the poll has stopped, and one
     subject repeating is the least of what is wrong with the issue.
