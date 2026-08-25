@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt -e ".[dev]"
+      - run: ruff check .
+      - run: pytest -q
+
+  feeds:
+    # Network-dependent, so it is advisory rather than blocking: some
+    # publishers rate-limit or block shared CI egress addresses.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: python tools/verify_feeds.py config/sources.yaml

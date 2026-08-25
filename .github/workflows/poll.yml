@@ -1,0 +1,29 @@
+name: poll
+
+# Daily, not weekly: five sources retain under a week of history, so a
+# weekly poll would silently drop items. See README "Why polling is daily".
+on:
+  schedule:
+    - cron: "0 2 * * *"      # 02:00 UTC = 10:00 SGT
+  workflow_dispatch:
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt -e .
+
+      # NOTE: the store must outlive the runner. Options, in rough order of
+      # preference: a hosted Postgres/Turso URL; an S3-synced SQLite file; or
+      # actions/cache, which is evicted after 7 days of disuse and so is only
+      # safe while the daily poll keeps it warm. Wire one up before relying on
+      # this workflow — a fresh runner starts with an empty database.
+      - name: Poll sources
+        env:
+          NEWSFEED_DB: data/newsfeed.db
+        run: newsfeed poll

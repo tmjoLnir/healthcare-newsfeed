@@ -1,0 +1,56 @@
+# Weekly issue template.
+#
+# Quotas are per-section so a heavy news week cannot crowd out the thin-supply
+# sections. `min: 0` means the section is omitted entirely when nothing
+# qualifies — better a missing block than a weak filler item.
+
+issue:
+  title: "This Week in Medicine"
+  timezone: Asia/Singapore
+  publish: "SUN 19:00"        # after the weekend's journal releases land
+  max_message_chars: 4096     # Telegram hard limit; split on section boundaries
+
+sections:
+
+  - key: story_of_week
+    heading: "🔬 Story of the week"
+    min: 1
+    max: 1
+    style: long               # headline + context paragraph
+
+  - key: journals
+    heading: "📊 From the journals"
+    min: 2
+    max: 4
+    style: short
+    diversify_by: source      # avoid three NEJM items in one issue
+
+  - key: explainer
+    heading: "💡 Explainer"
+    min: 1
+    max: 2
+    style: extract            # CC-licensed: may carry a long extract
+
+  - key: ethics
+    heading: "⚖️ Ethics corner"
+    min: 0                    # JME is bursty; omit rather than pad
+    max: 1
+    style: long
+
+  - key: global_health
+    heading: "🌍 Global health watch"
+    min: 0
+    max: 2
+    style: short
+
+  - key: policy
+    heading: "🏥 Policy"
+    min: 0
+    max: 1
+    style: short
+
+  - key: also_reading
+    heading: "📌 Also worth reading"
+    min: 3
+    max: 6
+    style: headline           # title + link only

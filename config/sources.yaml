@@ -1,0 +1,147 @@
+# Verified 2026-08-25. Re-check with `python tools/verify_feeds.py config/sources.yaml`.
+#
+# retention = how much history the feed holds. Five sources turn over in
+# under a week, which is why polling is daily and the store is mandatory.
+# See README "Why polling is daily".
+
+defaults:
+  adapter: rss
+  licence: link_only
+  poll_hours: 24
+  enabled: true
+
+sources:
+
+  # --- Daily-cadence reporting -------------------------------------------
+  - key: statnews
+    name: STAT — Health
+    url: https://www.statnews.com/category/health/feed/
+    weight: 1.0
+    paywalled: true            # headlines free, most articles metered
+    sections: [story_of_week, also_reading]
+    retention_days: 7          # verified: 20 items, 20 in last 7d
+
+  - key: medpage
+    name: MedPage Today
+    url: https://www.medpagetoday.com/rss/headlines.xml
+    weight: 0.9
+    sections: [story_of_week, also_reading]
+    retention_days: 4          # verified: 20 items, turns over fast
+
+  - key: bbc_health
+    name: BBC Health
+    url: https://feeds.bbci.co.uk/news/health/rss.xml
+    weight: 0.7                # breaking news decays over a week; see score.py
+    sections: [story_of_week, also_reading]
+    retention_days: 126
+
+  # --- Explainers (full text, republishable) ------------------------------
+  - key: conversation_uk
+    name: The Conversation — UK Health
+    url: https://theconversation.com/uk/health/articles.atom
+    licence: cc                # CC-BY-ND
+    weight: 1.0
+    sections: [explainer, ethics, also_reading]
+    retention_days: 11
+
+  - key: conversation_au
+    name: The Conversation — AU Health
+    url: https://theconversation.com/au/health/articles.atom
+    licence: cc
+    weight: 0.9
+    sections: [explainer, also_reading]
+    retention_days: 14
+
+  - key: conversation_id
+    name: The Conversation — Indonesia
+    url: https://theconversation.com/id/articles.atom
+    licence: cc
+    weight: 0.8                # nearest verified SE Asia signal; not health-only
+    sections: [explainer, also_reading]
+    retention_days: 21
+
+  # --- Journals (weekly by nature — aligned with the publish cycle) --------
+  - key: nejm
+    name: New England Journal of Medicine
+    url: https://www.nejm.org/action/showFeed?type=etoc&feed=rss&jc=nejm
+    weight: 1.0
+    paywalled: true
+    sections: [journals]
+    retention_days: 123
+    notes: >
+      Feed carries an 87-character citation string in place of a summary.
+      Renders as title + link only.
+
+  - key: lancet
+    name: The Lancet
+    url: https://www.thelancet.com/rssfeed/lancet_online.xml
+    weight: 1.0
+    paywalled: true
+    sections: [journals, global_health]
+    retention_days: 23
+
+  - key: jama_online
+    name: JAMA — Online First
+    url: https://jamanetwork.com/rss/site_3/onlineFirst_67.xml
+    weight: 0.9
+    paywalled: true
+    sections: [journals]
+    retention_days: 4
+
+  - key: nature_med
+    name: Nature Medicine
+    url: https://www.nature.com/nm.rss
+    weight: 0.9
+    paywalled: true
+    sections: [journals]
+    retention_days: 4
+    notes: Host responds intermittently; tolerate fetch failure without failing the run.
+
+  # --- Ethics (thin supply, high value — protected by its own quota) -------
+  - key: jme_ethics
+    name: BMJ Journal of Medical Ethics blog
+    url: https://blogs.bmj.com/medical-ethics/feed/
+    weight: 1.0
+    sections: [ethics]
+    retention_days: 43         # ~1-2 posts/week, bursty; can be silent a fortnight
+
+  # --- Policy (full text, republishable) -----------------------------------
+  - key: kff
+    name: KFF Health News
+    url: https://kffhealthnews.org/feed/
+    licence: cc                # explicitly invites republication
+    weight: 0.8                # US-centric; useful for policy contrast
+    sections: [policy, also_reading]
+    retention_days: 6
+
+  # --- Official (public domain, JSON not RSS) ------------------------------
+  - key: who_news
+    name: WHO — News
+    url: https://www.who.int/api/news/newsitems
+    adapter: who_odata
+    licence: public_domain
+    weight: 1.0
+    sections: [global_health, also_reading]
+    notes: >
+      The list endpoint returns Title, PublicationDateAndTime, NewsType and
+      ItemDefaultUrl only — no body text — so items render title + link.
+      ItemDefaultUrl is relative; prefix with https://www.who.int.
+      NewsType ("Statement", "News release", ...) is useful for filtering.
+
+  - key: who_dons
+    name: WHO — Disease Outbreak News
+    url: https://www.who.int/api/news/diseaseoutbreaknews
+    adapter: who_odata
+    licence: public_domain
+    weight: 1.0
+    sections: [global_health]
+
+# Verified unavailable 2026-08-25 — do not re-add without re-testing:
+#   bmj.com              Cloudflare 429/403 from datacenter IPs
+#   feeds.bmj.com        TLS handshake failure
+#   blogs.bmj.com/bmj    BMJ Opinion, dead since 2022-01-13
+#   medscape.com         Cloudflare bot challenge
+#   moh.gov.sg           no RSS (Isomer platform), all feed paths 404
+#   medicine.nus.edu.sg  Imperva/Incapsula bot protection
+#   duke-nus.edu.sg      Imperva/Incapsula bot protection
+#   lkcmedicine.ntu.edu.sg  gateway 502
