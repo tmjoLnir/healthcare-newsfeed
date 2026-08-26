@@ -62,8 +62,8 @@ There is no `/id/health/` path — that 404s. Only the Indonesian slug works.
 
 ## Singapore: MOH is reachable, with a small adapter
 
-The README records MOH as *"No RSS — the site runs on Isomer; every feed path
-404s"*. Both halves are still true — `/rss`, `/feed.xml` and `/newsroom/rss.xml`
+The source inventory recorded MOH as *"No RSS — the site runs on Isomer; every
+feed path 404s"*. Both halves are still true — `/rss`, `/feed.xml` and `/newsroom/rss.xml`
 all 404. But the conclusion drawn from it, that covering MOH means scraping
 static pages, is now wrong: **the newsroom ships a complete machine-readable
 index, and one partial HTTP request is enough to read it.**
@@ -177,7 +177,7 @@ mention a hospital, not health news. Only the Asia feed turned up a real story
 ("How big pharma targets China's waistline").
 
 Two further problems compound it. The feeds hold **under two days** of history,
-so the daily poll the README defends would silently drop items — this would be
+so the daily poll [design.md](design.md#why-polling-is-daily) defends would silently drop items — this would be
 the only source needing a faster cadence. And ST is hard-paywalled, so items
 render as headline and link anyway.
 
@@ -230,8 +230,8 @@ Blocked here: `channelnewsasia.com`, `asia.nikkei.com`, `scmp.com`,
 `ntu.edu.sg`, `annals.edu.sg`, `smj.org.sg`, `news.google.com`,
 `pubmed.ncbi.nlm.nih.gov`.
 
-`lkcmedicine.ntu.edu.sg` returned a gateway 502, matching the README's existing
-note — but through the same blocked path, so it is not a fresh confirmation.
+`lkcmedicine.ntu.edu.sg` returned a gateway 502, matching the existing note in
+[status.md](status.md#sources-that-do-not-work) — but through the same blocked path, so it is not a fresh confirmation.
 
 The highest-value ones to check first are **CNA** (believed at the time to be
 the only Singapore general-news outlet with documented per-section RSS,

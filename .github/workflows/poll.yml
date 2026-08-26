@@ -1,7 +1,7 @@
 name: poll
 
 # Daily, not weekly: five sources retain under a week of history, so a
-# weekly poll would silently drop items. See README "Why polling is daily".
+# weekly poll would silently drop items. See docs/design.md "Why polling is daily".
 on:
   schedule:
     - cron: "0 2 * * *"      # 02:00 UTC = 10:00 SGT

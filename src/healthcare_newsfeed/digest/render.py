@@ -13,7 +13,7 @@ Two of those are one rule between them. **Licence sets a ceiling and the
 section's style sets the ask**, and every extract is the smaller of the two:
 a `long` story from STAT is capped to a quotation because STAT is link-only,
 while a `long` one from WHO is not. Putting the ceiling in one table beside
-the styles is what makes the republishing rule in the README checkable
+the styles is what makes the republishing rule in docs/design.md checkable
 rather than a convention someone has to remember.
 
 The NEJM case is likewise not a special case. The RSS 1.0 journals all open
@@ -42,7 +42,7 @@ from .template import IssueSpec, SectionSpec
 
 # The most body text each licence permits, in characters, whatever the
 # section asked for. LINK_ONLY is a short quotation for orientation, not a
-# republication: the README's rule is a headline, a summary in your own
+# republication: the rule in docs/design.md is a headline, a summary in your own
 # words and a link, and nothing here can write the second of those.
 LICENCE_CEILINGS = {
     Licence.PUBLIC_DOMAIN: 1200,

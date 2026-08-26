@@ -3,7 +3,7 @@
 Load-bearing, not an optimisation: five upstream feeds retain less than a
 week of history (MedPage and JAMA Online First turn over in ~4 days), so
 items must be captured on a daily poll and held until the weekly publish.
-See README "Why polling is daily".
+See docs/design.md "Why polling is daily".
 
 Tables
 ------

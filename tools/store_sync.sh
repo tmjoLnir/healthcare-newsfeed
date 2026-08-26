@@ -5,7 +5,7 @@
 #
 # A fresh runner starts with an empty database, and five upstream feeds hold
 # less than a week of history — so an empty store is not a slow start, it is
-# permanent data loss for whatever rolled off in between. See README "Why
+# permanent data loss for whatever rolled off in between. See docs/design.md "Why
 # polling is daily" and docs/persistent-store.md.
 #
 #   store_sync.sh restore    download the store, verify it, record what we got

@@ -2,7 +2,7 @@
 #
 # retention = how much history the feed holds. Five sources turn over in
 # under a week, which is why polling is daily and the store is mandatory.
-# See README "Why polling is daily".
+# See docs/design.md "Why polling is daily".
 
 defaults:
   adapter: rss
