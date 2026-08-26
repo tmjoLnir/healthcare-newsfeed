@@ -1,6 +1,6 @@
 """Rendering a Digest into Telegram messages.
 
-The rules under test are the ones the README promises a reader and a
+The rules under test are the ones docs/design.md promises a reader and a
 publisher: how much of each item may go out, what a paywall looks like in
 the chat, and that an issue never arrives as broken markup or a message
 the API will reject.
@@ -88,7 +88,7 @@ def only(messages: list[str]) -> str:
 
 def test_a_link_only_source_carries_a_quotation_not_an_article(digest, spec, make_source,
                                                                make_item):
-    """The README's rule: headline, a short summary, and a link."""
+    """The republishing rule: headline, a short summary, and a link."""
     item = make_item("A long read", source="statnews", summary=PROSE * 5)
     sources = {"statnews": make_source("statnews", sections=("story_of_week",))}
 
@@ -208,7 +208,7 @@ def test_a_journal_citation_is_stripped_but_the_abstract_is_kept():
     "New England Journal of Medicine, Volume 395, Issue 8, August 20, 2026.",
 ])
 def test_a_summary_that_is_only_a_citation_leaves_nothing(citation):
-    """NEJM's feed carries one where the description belongs — see README."""
+    """NEJM's feed carries one where the description belongs — see docs/design.md."""
     assert strip_citation(citation) == ""
 
 

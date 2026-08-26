@@ -13,6 +13,13 @@
 # and news.nus.edu.sg are live but were rejected on review — see their rows.
 # CNA is still unreachable: the apex koreabiomed.com opened but 301s to a www
 # host that did not, and www.channelnewsasia.com remains blocked.
+#
+# Third sweep, 2026-08-26: www.channelnewsasia.com was opened and CNA was
+# measured at last — and REJECTED. It publishes no health feed at any path, and
+# its general feeds carry 1 health item in 40. Rows moved down to the rejected
+# block. www.koreabiomed.com is still blocked and is now the only unmeasured
+# candidate left; note the allowlist entry has to name the www host, since the
+# apex only 301s to it.
 
 defaults:
   adapter: rss
@@ -160,6 +167,48 @@ sources:
       centres, edge AI and horseshoe crabs. Same failure mode as the Straits
       Times: filtering a general feed for health yields almost nothing.
 
+  # --- Third sweep: live, measured, and rejected ---------------------------
+
+  - key: cna_singapore
+    name: CNA — Singapore
+    url: https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=10416
+    enabled: false
+    weight: 0.8
+    sections: [also_reading, policy]
+    notes: >
+      REJECTED 2026-08-26, after www.channelnewsasia.com was opened and the
+      feed was measured end to end. Category id 10416 is confirmed correct.
+
+      The premise was wrong: CNA has no health feed. /rss lists exactly seven
+      feeds — Latest News, Asia, Business, Singapore, Sport, World, and a Today
+      feed that returns zero items — and there is no "Mind Your Mental Health"
+      feed, nor any other health one. CNA's health sections on the website
+      (/mental-health, /news/healthmatters, /topic/wellness) carry no feed and
+      no discoverable taxonomy id; the endpoint takes numeric ids only and
+      rejects category=health, =wellness and =mental-health.
+
+      So this is general news, and it fails as the Straits Times did: 1 health
+      item in 20, and that one a malpractice court report. 20 items capped, a
+      20.6-hour window (shorter than the poll interval, so a daily poll drops
+      items), ~23 items/day, 166-character teasers with no full text.
+
+      Polled for real at weight 0.8 alongside all eighteen configured sources,
+      the issue built byte-identical to the control: CNA's best item ranked
+      146th of 431 candidates at 2.200, against a cut of 2.967 at rank 11. It
+      does not pollute the digest — topic_fit handles it — it simply publishes
+      nothing. Revisit only if CNA ever ships a health-section feed.
+
+  - key: cna_asia
+    name: CNA — Asia
+    url: https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6511
+    enabled: false
+    weight: 0.7
+    sections: [also_reading]
+    notes: >
+      REJECTED 2026-08-26 with cna_singapore. Category id 6511 confirmed
+      correct. 20 items capped, 35.1-hour window, ~14 items/day, 91-character
+      teasers — and 0 of 20 items health-related. Regional general news.
+
   - key: gnews_sg_health
     name: Google News — Singapore healthcare query
     url: https://news.google.com/rss/search?q=Singapore+healthcare+OR+hospital+OR+MOH&hl=en-SG&gl=SG&ceid=SG:en
@@ -178,24 +227,6 @@ sources:
   # Enabled so a sweep from an unblocked network actually tests them. Expect
   # this whole block to fail when run from inside a restricted environment.
 
-  - key: cna_singapore
-    name: CNA — Singapore
-    url: https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=10416
-    weight: 0.8
-    sections: [also_reading, policy]
-    notes: >
-      UNVERIFIED. Highest-value candidate: the only Singapore general-news
-      outlet with documented per-section RSS, and unpaywalled. The category
-      id is the part to confirm — CNA also publishes a "Mind Your Mental
-      Health" section feed whose id was not recoverable from here.
-
-  - key: cna_asia
-    name: CNA — Asia
-    url: https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6511
-    weight: 0.7
-    sections: [also_reading]
-    notes: UNVERIFIED. Category id needs confirming.
-
   - key: koreabiomed
     name: Korea Biomedical Review
     url: https://www.koreabiomed.com/rss/allArticle.xml
@@ -204,7 +235,9 @@ sources:
     notes: >
       UNVERIFIED still. The apex koreabiomed.com was opened in the second
       sweep but 301s to www.koreabiomed.com, which was not — so every feed
-      path under it still fails at CONNECT. Needs the www host opened too.
+      path under it still fails at CONNECT. Needs the www host opened too;
+      re-confirmed blocked in the third sweep, and now the only candidate on
+      this survey that has never been measured.
 
   - key: healthcareasia
     name: Healthcare Asia Magazine

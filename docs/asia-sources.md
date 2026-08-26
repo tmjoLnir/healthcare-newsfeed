@@ -62,8 +62,8 @@ There is no `/id/health/` path — that 404s. Only the Indonesian slug works.
 
 ## Singapore: MOH is reachable, with a small adapter
 
-The README records MOH as *"No RSS — the site runs on Isomer; every feed path
-404s"*. Both halves are still true — `/rss`, `/feed.xml` and `/newsroom/rss.xml`
+The source inventory recorded MOH as *"No RSS — the site runs on Isomer; every
+feed path 404s"*. Both halves are still true — `/rss`, `/feed.xml` and `/newsroom/rss.xml`
 all 404. But the conclusion drawn from it, that covering MOH means scraping
 static pages, is now wrong: **the newsroom ships a complete machine-readable
 index, and one partial HTTP request is enough to read it.**
@@ -177,7 +177,7 @@ mention a hospital, not health news. Only the Asia feed turned up a real story
 ("How big pharma targets China's waistline").
 
 Two further problems compound it. The feeds hold **under two days** of history,
-so the daily poll the README defends would silently drop items — this would be
+so the daily poll [design.md](design.md#why-polling-is-daily) defends would silently drop items — this would be
 the only source needing a faster cadence. And ST is hard-paywalled, so items
 render as headline and link anyway.
 
@@ -230,12 +230,13 @@ Blocked here: `channelnewsasia.com`, `asia.nikkei.com`, `scmp.com`,
 `ntu.edu.sg`, `annals.edu.sg`, `smj.org.sg`, `news.google.com`,
 `pubmed.ncbi.nlm.nih.gov`.
 
-`lkcmedicine.ntu.edu.sg` returned a gateway 502, matching the README's existing
-note — but through the same blocked path, so it is not a fresh confirmation.
+`lkcmedicine.ntu.edu.sg` returned a gateway 502, matching the existing note in
+[status.md](status.md#sources-that-do-not-work) — but through the same blocked path, so it is not a fresh confirmation.
 
-The highest-value ones to check first are **CNA** (the only Singapore
-general-news outlet with documented per-section RSS, including a mental-health
-section, and unpaywalled), **Korea Biomedical Review** (English-language
+The highest-value ones to check first are **CNA** (believed at the time to be
+the only Singapore general-news outlet with documented per-section RSS,
+including a mental-health section, and unpaywalled — the third sweep found no
+such health feed exists), **Korea Biomedical Review** (English-language
 healthcare trade press for Korea) and **Healthcare Asia / Medical Channel
 Asia** (regional healthcare trade press, WordPress, so `/feed/` most likely
 works).
@@ -307,6 +308,107 @@ and it is the only Singapore general-news outlet with documented per-section
 RSS, unpaywalled — precisely where the Straits Times failed. Nothing found in
 either sweep replaces it.
 
+*Superseded: CNA was opened and measured in the [third
+sweep](#third-sweep--2026-08-26-cna-opened-and-measured), and rejected — the
+per-section RSS turned out to be seven general feeds with no health section
+among them.*
+
+---
+
+## Third sweep — 2026-08-26, CNA opened and measured
+
+`www.channelnewsasia.com` was opened, and CNA was measured end to end for the
+first time. **Verdict: rejected.** Not because it is noisy — the scorer handles
+it — but because CNA publishes no health feed at all, and its general feeds
+publish nothing.
+
+### The catalogue is seven general feeds, and none is health
+
+The whole premise of the CNA rows was that CNA has documented per-section RSS
+"including a mental-health section". That is wrong, and this sweep is where it
+was checked. `https://www.channelnewsasia.com/rss` lists exactly seven feeds:
+
+| Feed | `category` | Notes |
+|---|---|---|
+| Latest News | *(none)* | site-wide |
+| Asia | `6511` | verified |
+| Business | `6936` | verified — 20/20 items under `/business` |
+| Singapore | `10416` | verified |
+| Sport | `10296` | verified — 20/20 items under `/sport` |
+| World | `6311` | verified — 15/20 under `/world` |
+| Today | `679471` | **dead — returns zero items** |
+
+So the two ids already in `candidates-asia.yaml` were right. The `category`
+parameter is genuinely honoured — a bogus id returns zero items rather than
+falling back to the site-wide feed — but it takes numeric Drupal taxonomy ids
+only, and no health id is discoverable. CNA does run health sections on the
+website — `/mental-health`, `/news/healthmatters`, `/topic/wellness`,
+`/today/mental-health-matters` — and **none of them has a feed**. Their pages
+carry no taxonomy id in the markup, `/api/v1/rss-outbound-feed` is the only API
+endpoint the site references, and it rejects `category=wellness`,
+`category=health` and `category=mental-health` alike. There is no health feed
+to find, so nothing here replaces the Straits Times gap after all.
+
+### What the general feeds actually hold
+
+| Feed | Items | Window | Rate | Summary | Health items |
+|---|---|---|---|---|---|
+| Singapore `10416` | 20 (capped) | **20.6h** | ~23/day | 166 ch median, no full text | **1 of 20** |
+| Asia `6511` | 20 (capped) | **35.1h** | ~14/day | 91 ch median, no full text | **0 of 20** |
+
+Both feeds are hard-capped at 20 items. The Singapore window is *shorter than
+the poll interval*, so a daily poll drops items — the Straits Times problem
+again, and worse.
+
+The one health item in forty was "Doctor accused of causing patient's death by
+cutting wrong arteries restricted from surgery" — a malpractice court report,
+which is precisely what the Straits Times sweep rejected ("court and traffic
+reports mentioning a hospital"). A keyword filter over the Singapore feed
+matched 3 of 20, and two of those were false positives: a cocaine seizure
+matching *drug*, and a desalination trial matching *pre-treat*. The rest of the
+window is fashion, cashback promotions, an anime concert and a Mid-Autumn
+Festival fair.
+
+### It publishes nothing — measured, not estimated
+
+Added to `sources.yaml` at the proposed weight 0.8 and polled for real
+alongside all eighteen configured sources, then built:
+
+```
+$ diff issue_no_cna.txt issue_with_cna.txt
+38c38
+< 11 of 411 candidates published
+---
+> 11 of 431 candidates published
+```
+
+The issue is otherwise **identical**. CNA's best item of the twenty ranks
+**146th of 431** candidates (score 2.200); the cut for this issue was rank 11
+at 2.967, and rank 50 still scored 2.632. This is not a near miss that a quiet
+week would flip.
+
+Worth recording precisely because a smaller test suggested otherwise: scored
+against `bbc_health` *alone*, CNA looked dangerous — four of the top ten, and a
+higher mean than BBC Health — because its items are always maximally recent (the
+feed turns over in 20 hours) and feature-written, so `recency` and `readability`
+carry them. Against the real 431-candidate pool that advantage disappears
+entirely. `topic_fit` leading the weights is doing its job; the two-source
+comparison was the misleading measurement, not the scorer.
+
+So the cost of adding CNA is ~150 items a week of general news in the store for
+zero published items. Store size is [never the binding
+constraint](persistent-store.md), so this is not a storage argument — it is
+simply that the row would do nothing except make every future sweep re-litigate
+it.
+
+### On getting hosts opened
+
+CNA arrived in two steps worth remembering: the apex `channelnewsasia.com` was
+opened first, which bought nothing, because it only `301`s to
+`www.channelnewsasia.com` — and a redirect target is a separate CONNECT, so the
+policy still refused it. **An allowlist entry has to name the `www` host.**
+`www.koreabiomed.com` is still in exactly that state, re-confirmed blocked here.
+
 ---
 
 ## Recommendation
@@ -318,9 +420,21 @@ either sweep replaces it.
 3. ~~Add `annals_sg`~~ — **done**, after the second sweep. Weight 1.0, `cc`.
 4. ~~Build the MOH adapter~~ — **done.** `sources/moh.py`, ~11 items a week
    overall and ~1.5 of the steady kind, `link_only`, newest 40 records a poll.
-5. **Get `www.channelnewsasia.com` and `www.koreabiomed.com` opened**, then
-   re-run `config/candidates-asia.yaml`. CNA is the one gap neither sweep
-   filled, and the only outstanding item on this survey.
+5. ~~Get `www.channelnewsasia.com` opened~~ — **done, and CNA is rejected.**
+   Measured in the third sweep: CNA publishes no health feed at any path, and
+   its Singapore and Asia general feeds carry 1 health item in 40 and rank no
+   higher than 146th of 431 candidates. The rows stay in
+   `candidates-asia.yaml`, disabled, as the record. Revisit only if CNA ever
+   publishes a feed for `/mental-health` or `/news/healthmatters`.
+6. **Get `www.koreabiomed.com` opened** — the `www` host specifically; the apex
+   alone only `301`s to it, which the policy still refuses. This is the last
+   unmeasured candidate on the survey.
+
+With CNA settled, the Singapore general-news gap is closed as *unfillable*
+rather than open: the Straits Times, NUS Newsroom and CNA all failed the same
+way — filtering a general feed for health yields almost nothing. Google News
+remains the only route to that content, and it needs a URL-resolution step
+first.
 
 The config is now at eighteen sources, all verified reachable, with the
 regional four carrying Asia and Singapore.

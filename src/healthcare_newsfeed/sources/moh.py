@@ -2,7 +2,7 @@
 
 MOH publishes no feed. `/rss`, `/feed.xml` and `/newsroom/rss.xml` all 404,
 and the site runs on Isomer Next — a Next.js platform with no syndication.
-The README recorded it as unreachable, and covering it as a page-scraping
+The survey recorded it as unreachable, and covering it as a page-scraping
 job. Neither is quite right: the newsroom listing page ships its whole index
 inside the React Server Component flight payload, and the host honours byte
 ranges, so one partial request reads it.
