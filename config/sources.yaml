@@ -243,6 +243,12 @@ sources:
 #   straitstimes.com     feeds are healthy, but no health section exists and
 #                        keyword-filtering general news yields ~0 healthcare
 #                        items; measured in docs/asia-sources.md
+#   channelnewsasia.com  reachable since 2026-08-26 and evaluated in full — but
+#                        its seven feeds are all general news and none is
+#                        health. 1 health item in 40, and polling it changed
+#                        the built issue not at all (best item 146th of 431).
+#                        Same failure as the Straits Times; see
+#                        docs/asia-sources.md third sweep
 #
 # Asia/Singapore candidates not yet promoted here — verified volumes, licences
 # and open questions in docs/asia-sources.md, re-runnable via

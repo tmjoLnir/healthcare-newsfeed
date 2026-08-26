@@ -636,11 +636,15 @@ tests/                offline, fixture-driven
 
 Open, and judgement calls rather than gaps:
 
-- [ ] Egress that reaches NEJM, Annals and CNA. Two configured sources are
-      blocked from Actions runners today, and CNA — the one Singapore
-      general-news outlet with per-section RSS, unpaywalled — could not be
-      reached to evaluate at all. `channelnewsasia.com` was opened on
-      2026-08-25 and did not help: the apex only `301`s to
-      `www.channelnewsasia.com`, which is still refused at CONNECT. The
-      allowlist needs the `www` host by name — same for `www.koreabiomed.com`.
-      See [docs/asia-sources.md](docs/asia-sources.md) third sweep
+- [ ] Egress that reaches NEJM and Annals from an Actions runner. Both serve
+      normally elsewhere and both answer the runner with `403`, so they
+      contribute nothing to a published issue until the poller has a
+      residential or proxied address. `poll` already classifies this as
+      *blocked* rather than *failed*, so it costs nothing else
+- [x] CNA evaluated — `www.channelnewsasia.com` was opened on 2026-08-26 and
+      CNA was measured at last. **Rejected:** it publishes no health feed at
+      any path (seven general feeds, none health), carries 1 health item in 40,
+      and polling it left the built issue byte-identical. The Singapore
+      general-news gap is closed as unfillable rather than open — the Straits
+      Times, NUS Newsroom and CNA all fail the same way. See
+      [docs/asia-sources.md](docs/asia-sources.md) third sweep
