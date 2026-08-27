@@ -28,6 +28,8 @@ KFF = make_source("kff", "https://kffhealthnews.org/feed/", Licence.CC_REPUBLISH
 CONVERSATION = make_source("conversation_uk",
                            "https://theconversation.com/uk/health/articles.atom",
                            Licence.CC_REPUBLISHABLE)
+ANNALS = make_source("annals_sg", "https://annals.edu.sg/feed/",
+                     Licence.CC_REPUBLISHABLE)
 
 FIXTURES = {
     "rss20": ("bbc_health_rss2.xml", BBC, 4),
@@ -112,6 +114,35 @@ def test_full_text_is_preferred_over_the_teaser(parse):
     """
     assert len(parse("kff_rss2.xml", KFF)[0].summary) > 5000
     assert len(parse("conversation_uk_atom.xml", CONVERSATION)[0].summary) > 5000
+
+
+def test_wordpress_generator_footer_is_dropped(parse):
+    """WordPress's sign-off is the generator talking, not the publisher.
+
+    It matters most where the body is shortest: Annals publishes some items as
+    a PDF with only a stub in the feed, and there the footer is long enough to
+    survive into the rendered extract — which would put out a digest block
+    made entirely of boilerplate.
+    """
+    bodies = {item.title: item.summary for item in parse("annals_sg_rss2.xml", ANNALS)}
+
+    for title, summary in bodies.items():
+        assert "appeared first on" not in summary, title
+    assert bodies["Continuing Medical Education"] == (
+        "This article is available only as a PDF. Please click on "
+        "\u201cDownload PDF\u201d on top to view the full article."
+    )
+
+
+def test_stripping_the_footer_leaves_the_article_intact(parse):
+    """Anchored at the end, so it takes the footer and nothing before it."""
+    bodies = {item.title: item.summary
+              for item in parse("annals_sg_rss2.xml", ANNALS)}
+    article = bodies["Stroke publications in Southeast Asia: A bibliometric analysis"]
+
+    assert len(article) > 10_000
+    assert article.startswith("Dear Editor,")
+    assert article.rstrip().endswith("Neurol J Southeast Asia 1996;1:1.")
 
 
 def test_tracking_parameters_are_left_for_the_store(parse):

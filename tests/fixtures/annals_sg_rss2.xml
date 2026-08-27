@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>Annals Singapore</title>
+	<atom:link href="https://annals.edu.sg/feed/" rel="self" type="application/rss+xml" />
+	<link>https://annals.edu.sg</link>
+	<description>Academy of Medicine, Singapore</description>
+	<lastBuildDate>Fri, 21 Aug 2026 03:43:39 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	<generator>https://wordpress.org/?v=7.0.4</generator>
+	<item>
+		<title>Stroke publications in Southeast Asia: A bibliometric analysis</title>
+		<link>https://annals.edu.sg/stroke-publications-in-southeast-asia/</link>
+		
+		<dc:creator><![CDATA[Nuraiziah Johari]]></dc:creator>
+		<pubDate>Tue, 11 Aug 2026 08:36:17 +0000</pubDate>
+				<category><![CDATA[Letter to the Editor]]></category>
+		<category><![CDATA[ASEAN]]></category>
+		<category><![CDATA[august2026]]></category>
+		<category><![CDATA[bibliometrics]]></category>
+		<category><![CDATA[covid-19]]></category>
+		<category><![CDATA[neurology]]></category>
+		<category><![CDATA[onlinefirst]]></category>
+		<category><![CDATA[Stroke]]></category>
+		<guid isPermaLink="false">https://annals.edu.sg/?p=40819</guid>
+
+					<description><![CDATA[<p>Dear Editor, Stroke is the second leading cause of death and a major cause of disability worldwide, disproportionately affecting low- and lower-middle-income countries.1 The Association of Southeast Asian Nations (ASEAN) is a political and economic union of 11 member states (Brunei, Cambodia, Indonesia, Laos, Malaysia, Myanmar, the Philippines, Singapore, Thailand, Timor-Leste, and Vietnam) with over [&#8230;]</p>
+<p>The post <a rel="nofollow" href="https://annals.edu.sg/stroke-publications-in-southeast-asia/">Stroke publications in Southeast Asia: A bibliometric analysis</a> appeared first on <a rel="nofollow" href="https://annals.edu.sg">Annals Singapore</a>.</p>
+]]></description>
+										<content:encoded><![CDATA[<p>Dear Editor,</p>
+<p>Stroke is the second leading cause of death and a major cause of disability worldwide, disproportionately affecting low- and lower-middle-income countries.<sup>1</sup> The Association of Southeast Asian Nations (ASEAN) is a political and economic union of 11 member states (Brunei, Cambodia, Indonesia, Laos, Malaysia, Myanmar, the Philippines, Singapore, Thailand, Timor-Leste, and Vietnam) with over 680 million people, representing more than 8% of the global population. It has a particularly high stroke incidence and mortality, with diverse healthcare systems, population sizes, geographies, and socioeconomic settings.<sup>2</sup></p>
+<p>This is a report on an updated bibliometric analysis of stroke publications from ASEAN countries, aiming to characterise research output, publication patterns, collaborations, and their associations with socioeconomic indicators, including stroke publications related to COVID-19. The authors conducted a bibliometric search in PubMed for publications indexed between June 2020 and May 2024 using the terms &#8220;Stroke&#8221;, &#8220;Cerebrovascular Accident&#8221;, or &#8220;Transient Ischaemic Attack&#8221; in combination with &#8220;Southeast Asia&#8221; and each Southeast Asian country, including alternative terminology where applicable. Publications were included if stroke was the primary focus and at least 1 author had an affiliation in an ASEAN country (Supplementary Annex S1). Publications addressing stroke as a secondary topic or outcome, commentaries, replies, conference abstracts, or articles in which &#8220;stroke&#8221; was used as a non-medical term were excluded.</p>
+<p>A single reviewer extracted data on publication characteristics, study design, collaboration type, country of origin, journal, and whether the publication addressed both stroke and COVID-19 (Supplementary Tables S1, S3, and S4). Socioeconomic and healthcare indicators, including population, gross domestic product (GDP) per capita, neurologist density defined as the number of neurologists per million people, research and development expenditure, current health expenditure, and universal health coverage indices, were obtained from publicly available international databases (Supplementary Table S2). Associations between publication volume and socioeconomic indicators (Supplementary Tables S5 and S6) were assessed using Spearman&#8217;s rank-order correlation in Microsoft Excel version 2410 (Microsoft Corporation, 2024), with statistical significance defined as <em>P</em>&lt;0.05.</p>
+<p>Of 3363 records identified, 1210 publications from 472 journals met the inclusion criteria after duplicate removal and screening (Supplementary Fig. S1). As the publications with authors from multiple ASEAN countries were counted once in the country-level analysis, the total country-specific publication count was 1312.</p>
+<p>Based on the country-level counts (n=1312; Supplementary Table S3), Singapore contributed the largest proportion of publications (n=481, 36.6%), followed by Thailand (n=262, 20.0%), Malaysia (n=241, 18.4%), Indonesia (n=152, 11.6%), and Vietnam (n=103, 7.9%), whereas Myanmar, Brunei, Cambodia, and Laos each contributed fewer than 10 publications. No publications were identified from Timor-Leste.</p>
+<p>All subsequent analyses were performed at the publication level (n=1210; Supplementary Table S3). Cohort studies were the most common study design (n=328, 27.1%), followed by systematic reviews (n=161, 13.3%), case reports (n=128, 10.6%), and cross-sectional studies (n=127, 10.5%). Most publications appeared in international journals (n=1,057, 87.4%). Of the 598 (49.4%) publications involving international collaboration, the vast majority were with non-ASEAN collaborators only (n=532, 89.0%), whereas only 45 (7.5%) involved both ASEAN and non- ASEAN collaborators, and just 21 (3.5%) involved collaboration exclusively within ASEAN. Among the included publications, 1154 (95.4%) were published in journals indexed in the Web of Science, with a median journal impact factor of 2.7 (interquartile range 2.0–4.1). Three-quarters (n=870, 75.4%) were published in journals with an impact factor ≥2.0.</p>
+<p>Publication volume correlated positively with GDP per capita (ρ=0.715, 95% confidence interval [CI] 0.202–0.920, <em>P</em>=0.01), neurologist density (ρ=0.825, 95% CI 0.0240–0.887, <em>P</em>=0.001), and the 2021 Universal Health Coverage (UHC) Service Coverage Index (ρ=0.747, 95% CI 0.267–0.930, <em>P</em>=0.008), but not with population, research and development expenditure, or health expenditure indicators (Supplementary Table S5).</p>
+<p>Seventy-four publications (6.1%) addressed both stroke and COVID-19. The number of COVID-19-related stroke publications correlated with overall volume of stroke publication (ρ=0.898, 95% CI 0.681–0.977, <em>P</em>=0.00018), GDP per capita (ρ=0.800, 95% CI 0.385–0.946, <em>P</em>=0.003), and neurologist density (ρ=0.744, 95% CI 0.342–0.941, <em>P</em>=0.006) (Supplementary Table S6).</p>
+<p>The authors observed that stroke research output in ASEAN was disproportionately concentrated in Singapore, Thailand and Malaysia, which collectively form over 80% of the region&#8217;s publications, consistent with a previous bibliometric study.<sup>2</sup> Similar to past evidence, publication volume was positively associated with GDP per capita, neurologist density, and the UHC Service Coverage Index.<sup>2,3</sup> However, these socioeconomic indicators do not fully explain the observed heterogeneity. For example, Singapore produced substantially more publications than Brunei despite both being high-income economies, while Thailand outperformed Indonesia and the Philippines among middle-income countries. These observations suggest that differences in research infrastructure, academic institutions, workforce capacity and international collaborations may also contribute to research productivity, with these advantages potentially reinforced by the Matthew effect, where early advantages compound over time, increasing disparities.<sup>4,5</sup></p>
+<p>Regional collaboration within ASEAN remains limited, with most collaborative publications involving partners outside the region. Strengthening intra-ASEAN collaboration could facilitate multicentre studies and generate evidence addressing shared epidemiological and healthcare challenges.<sup>6</sup> While higher-output countries may serve as regional hubs for mentorship and methodological support, sustainable improvement will require building research capacity in lower-output countries. Strategies include developing national stroke registries, investigator training, multicentre studies, shared research protocols, and regional funding initiatives.<sup>7</sup> Existing networks, such as the ASEAN Neurological Association, may provide a platform for expanding regional partnerships.<sup>8</sup></p>
+<p>COVID-19-related stroke publications showed similar associations with GDP per capita and neurologist density to those seen for overall stroke publications. The absence of an association with short-term changes in healthcare expenditure suggests the possibility that established research capacity, rather than temporary funding increment, underpins research productivity, though this study cannot establish causation.</p>
+<p>This study has several limitations. Correlation analyses were based on country-level aggregate data from a small number of ASEAN countries and should be interpreted as exploratory ecological associations rather than causal relationships. Only PubMed-indexed publications were included, potentially excluding publications indexed elsewhere. Study selection was performed by a single reviewer, which may have introduced selection bias. Furthermore, bibliometric analyses treat all publications equally, regardless of study quality or impact; and socioeconomic and healthcare indicators were derived from publicly available sources with varying reporting years.</p>
+<p>In conclusion, stroke research output across ASEAN remains uneven and is associated with socioeconomic and healthcare capacity. These disparities highlight the need to strengthen regional collaboration, support locally led research, and build stroke research capacity, particularly in lower-output countries.</p>
+<p><a href="https://annals.edu.sg/wp-content/uploads/2026/08/V55N8_2026151_Supplementary_Materials.pdf" target="_blank" rel="noopener"><strong><em>Supplementary materials</em></strong></a></p>
+<p><em>Annex S1. Search strategy.</em></p>
+<p><em>Fig. S1. PRISMA flow diagram.</em></p>
+<p><em>Table S1.</em> <em>Details of information gathered for each eligible publication.</em></p>
+<p><em>Table S2. Summary of socioeconomic markers of ASEAN countries.</em></p>
+<p><em>Table S3. Summary of bibliometric indexes of stroke publications in ASEAN post-May 2020.</em></p>
+<p><em>Table S4. Summary of characteristics of stroke publications in ASEAN post-May 2020.</em></p>
+<p><em>Table S5. Correlations between socioeconomic markers and publication volume of total stroke publications and stroke-COVID-19 publications in ASEAN.</em></p>
+<p><em>Table S6. Correlation between percentage change in publication volume of total stroke publications and markers in changes in healthcare funding over the course of the COVID-19 pandemic.</em></p>
+<p><em>Table S7. Top 10 journals in publication volume of eligible publications.</em></p>
+<hr />
+<p><strong>REFERENCES</strong></p>
+<ol>
+<li>Feigin VL, Brainin M, Norrving B, et al. World Stroke Organization (WSO): Global Stroke Fact Sheet 2022. Int J Stroke 2022;17:18-29.</li>
+<li>Apor A, Pagaling GT, Espiritu AI, et al. Stroke Research Disparity in Southeast Asia: Socioeconomic Factors, Healthcare Delivery, and Stroke Disease Burden. J Stroke Cerebrovasc Dis 2021;30:105481.</li>
+<li>Turalde CWR, Espiritu AI, Jamora RDG. Associations of motor neuron disease research productivity and socioeconomic factors in Southeast Asia: a bibliometric analysis. Arq Neuropsiquiatr 2021;79:1002-11.</li>
+<li>Bol T, de Vaan M, van de Rijt A. The Matthew effect in science funding. Proc Natl Acad Sci USA 2018;115:4887-90.</li>
+<li>Olopade CO, Olugbile S, Olopade OI. Issues and Challenges for Clinical Research in International Settings. In Gallin JI, Ognibene FP (Eds). Principles and Practice of Clinical Research 2nd ed. Amsterdam: Elsevier; 2012:689-99.</li>
+<li>Ng JC, Churojana A, Pongpech S, et al. Current state of acute stroke care in Southeast Asian countries. Interv Neuroradiol 2019;25:291-6.</li>
+<li>Tan KS, Yoon BW, Lin RT, et al. 10th Anniversary of the Asia Pacific Stroke Organization: State of Stroke Care and Stroke Research in the Asia-Pacific. Cerebrovasc Dis Extra 2022;12:14-22.</li>
+<li>Tan CT. Why the Neurological Journal of South East Asia. Neurol J Southeast Asia 1996;1:1.</li>
+</ol>
+<p>The post <a rel="nofollow" href="https://annals.edu.sg/stroke-publications-in-southeast-asia/">Stroke publications in Southeast Asia: A bibliometric analysis</a> appeared first on <a rel="nofollow" href="https://annals.edu.sg">Annals Singapore</a>.</p>
+]]></content:encoded>
+					
+		
+		
+			</item>
+		<item>
+		<title>Continuing Medical Education</title>
+		<link>https://annals.edu.sg/continuing-medical-education-2/</link>
+		
+		<dc:creator><![CDATA[Nuraiziah Johari]]></dc:creator>
+		<pubDate>Wed, 15 Jul 2026 04:32:08 +0000</pubDate>
+				<category><![CDATA[CME]]></category>
+		<category><![CDATA[november1997]]></category>
+		<guid isPermaLink="false">https://annals.edu.sg/?p=40709</guid>
+
+					<description><![CDATA[<p>This article is available only as a PDF. Please click on “Download PDF” on top to view the full article.</p>
+<p>The post <a rel="nofollow" href="https://annals.edu.sg/continuing-medical-education-2/">Continuing Medical Education</a> appeared first on <a rel="nofollow" href="https://annals.edu.sg">Annals Singapore</a>.</p>
+]]></description>
+										<content:encoded><![CDATA[<p>This article is available only as a PDF. Please click on “Download PDF” on top to view the full article.</p>
+<p>The post <a rel="nofollow" href="https://annals.edu.sg/continuing-medical-education-2/">Continuing Medical Education</a> appeared first on <a rel="nofollow" href="https://annals.edu.sg">Annals Singapore</a>.</p>
+]]></content:encoded>
+					
+		
+		
+			</item>
+		<item>
+		<title>Duodeno-ureteric Fistula Secondary to Chronic Duodenal Ulceration</title>
+		<link>https://annals.edu.sg/duodeno-ureteric-fistula-secondary-to-chronic-duodenal-ulceration/</link>
+		
+		<dc:creator><![CDATA[Nuraiziah Johari]]></dc:creator>
+		<pubDate>Wed, 15 Jul 2026 04:30:00 +0000</pubDate>
+				<category><![CDATA[Case Reports]]></category>
+		<category><![CDATA[Alimentary]]></category>
+		<category><![CDATA[november1997]]></category>
+		<category><![CDATA[Peptic ulcer]]></category>
+		<category><![CDATA[Urinary tract]]></category>
+		<guid isPermaLink="false">https://annals.edu.sg/?p=40701</guid>
+
+					<description><![CDATA[<p>Renoalimentary fistulae are rare. When they occur, they are usually between the right renal pelvis and the duodenum. The primary pathology often resides in the kidney, and nephrectomy is frequently necessary in the management of such fistulae. We describe the case of an elderly man who presented with non-specific abdominal pain. He had a history [&#8230;]</p>
+<p>The post <a rel="nofollow" href="https://annals.edu.sg/duodeno-ureteric-fistula-secondary-to-chronic-duodenal-ulceration/">Duodeno-ureteric Fistula Secondary to Chronic Duodenal Ulceration</a> appeared first on <a rel="nofollow" href="https://annals.edu.sg">Annals Singapore</a>.</p>
+]]></description>
+										<content:encoded><![CDATA[<p class="PDq2pG_selectionAnchorContainer" data-start="108" data-end="351">Renoalimentary fistulae are rare. When they occur, they are usually between the right renal pelvis and the duodenum. The primary pathology often resides in the kidney, and nephrectomy is frequently necessary in the management of such fistulae.</p>
+<p data-start="356" data-end="644">We describe the case of an elderly man who presented with non-specific abdominal pain. He had a history of peptic ulcer disease, which had been treated with an H&lt;sub&gt;2&lt;/sub&gt;-receptor antagonist. He had remained well for the past few years until he recently developed upper abdominal pain.</p>
+<p data-start="649" data-end="879">Subsequent investigations demonstrated a duodeno-ureteric fistula secondary to a chronic duodenal ulcer. The kidney was normal. A Polya gastrectomy was performed, and the patient recovered with complete resolution of his symptoms.</p>
+<p>This article is available only as a PDF. Please click on “Download PDF” on top to view the full article.</p>
+<p>The post <a rel="nofollow" href="https://annals.edu.sg/duodeno-ureteric-fistula-secondary-to-chronic-duodenal-ulceration/">Duodeno-ureteric Fistula Secondary to Chronic Duodenal Ulceration</a> appeared first on <a rel="nofollow" href="https://annals.edu.sg">Annals Singapore</a>.</p>
+]]></content:encoded>
+					
+		
+		
+			</item>
+	</channel>
+</rss>
+
+<!-- plugin=object-cache-pro client=phpredis metric#hits=3109 metric#misses=15 metric#hit-ratio=99.5 metric#bytes=1704626 metric#prefetches=187 metric#store-reads=28 metric#store-writes=3 metric#store-hits=196 metric#store-misses=8 metric#sql-queries=8 metric#ms-total=330.34 metric#ms-cache=9.09 metric#ms-cache-avg=0.3031 metric#ms-cache-ratio=2.8 -->

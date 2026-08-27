@@ -14,6 +14,7 @@ stripping HTML from summaries.
 from __future__ import annotations
 
 import datetime as dt
+import re
 from urllib.parse import urljoin
 
 import feedparser
@@ -36,6 +37,23 @@ def entry_date(entry) -> dt.datetime | None:
         if value:
             return dt.datetime(*value[:6], tzinfo=dt.UTC)
     return None
+
+
+# WordPress closes every syndicated item with "The post <title> appeared first
+# on <site>." — a generator artifact rather than anything the publisher wrote.
+# Two configured sources run on WordPress (Annals and the JME blog), and for a
+# PDF-only Annals item the body is short enough that the footer survives into
+# the rendered extract, which would publish a block that is entirely
+# boilerplate. Anchored at the end and bounded, so it cannot eat real prose
+# that happens to contain the words.
+_WP_FOOTER = re.compile(
+    r"\s*The post\b[^.]{0,300}?\bappeared first on\b[^.]{0,120}?\.\s*$"
+)
+
+
+def _strip_generator_footer(text: str) -> str:
+    """Drop trailing feed-generator boilerplate from an item body."""
+    return _WP_FOOTER.sub("", text)
 
 
 def _body(entry) -> str:
@@ -106,7 +124,7 @@ class RssAdapter(HttpSource):
                 title=title,
                 url=link,
                 published=entry_date(entry),
-                summary=clean_text(_body(entry)),
+                summary=_strip_generator_footer(clean_text(_body(entry))),
                 authors=_authors(entry),
                 categories=tuple(
                     clean_text(tag.get("term", "")) for tag in entry.get("tags") or []

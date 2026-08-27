@@ -2,7 +2,9 @@
 
 Measured 2026-08-25 against the live web, using `tools/verify_feeds.py`'s
 checks and — for the three candidates worth adding — the project's own
-`sources/rss.py` adapter end to end.
+`sources/rss.py` adapter end to end. Five sweeps have run since; each is a
+dated section below, and the [fifth](#fifth-sweep--2026-08-27-what-singapore-content-the-digest-actually-holds)
+is the one to read for where things stand.
 
 The question this answers: the digest publishes on `Asia/Singapore` time to a
 Singapore audience, but every source in `config/sources.yaml` is UK, US, AU or
@@ -188,13 +190,15 @@ worth the row.
 
 ## Confirmed dead
 
-Checked directly; do not retry without re-testing.
+Checked directly; do not retry without re-testing. One entry here was wrong —
+see the Duke-NUS row — because a challenge page was read as a real response.
+When re-testing, check the body, not just the status.
 
 | Candidate | Result |
 |---|---|
 | `moh.gov.sg/rss`, `/feed.xml`, `/newsroom/rss.xml` | 404 — no feed anywhere (use the newsroom index above) |
-| **Duke-NUS** | Host now reachable — but no feed exists. `/feed`, `/allnews/rss`, `/newshub/rss` all return HTML with a 200; `/rss.xml`, `/sitemap.xml` 404. Supersedes the earlier "Imperva/Incapsula" note: the block has lifted and there is simply nothing to poll |
-| **NUS Medicine** | `medicine.nus.edu.sg/feed/` → 500, `{"code":"wp_die","message":"No feed available."}` — WordPress with feeds disabled |
+| **Duke-NUS** | **Still Incapsula-blocked — corrected in the [fifth sweep](#correction-duke-nus-is-not-reachable-with-no-feed).** Every path answers with a 212-byte Incapsula challenge stub: `/allnews/rss` and `/newshub/rss` with a 200, which is the "HTML with a 200" this row used to report, and `/feed`, `/rss.xml` with a 404. The block never lifted, so whether a feed exists is unknown rather than answered |
+| **NUS Medicine** | `medicine.nus.edu.sg/feed/` → 500, `{"code":"wp_die","message":"No feed available."}` — WordPress with feeds disabled. Re-confirmed 2026-08-27: a genuine `text/xml` origin response, unlike Duke-NUS above |
 | `theconversation.com/id/health/articles.atom` | 404 — only the `kesehatan` slug exists |
 | The Conversation topic feeds | Parse, but abandoned: `topics/singapore-1123` last published 812 days ago, `topics/southeast-asia-1211` 3,696 days ago |
 | `straitstimes.com` health/science/lifestyle/tech RSS | 400 `{"error":"No rss feeds found"}` |
@@ -492,6 +496,233 @@ health-section feed, which would show up on `/rss` and in `robots.txt`.
 
 ---
 
+## Fifth sweep — 2026-08-27, what Singapore content the digest actually holds
+
+The first four sweeps asked *what could be added*. This one asks the question
+from the other end: with eighteen sources configured, **how much Singapore
+health content is in the store, where does it come from, and which Singapore
+domains are still unmeasured?**
+
+All eighteen sources were polled into a scratch store on 2026-08-27 — 416
+items, every source `ok`, including `nejm` and `annals_sg`, which serve
+normally here and only fail from an Actions runner.
+
+### The inventory
+
+| | Items | Share |
+|---|---|---|
+| Published *by* a Singapore source (`moh_sg` 40 + `annals_sg` 10) | 50 | 12.0% |
+| Mentioning Singapore anywhere in the other sixteen sources | **1** | 0.3% |
+| Wider SEA / Asia-Pacific signal (`conversation_id`, `lancet_wpc`, `lancet_sea`, `lancet`, `who_news`) | 29 | 7.0% |
+
+The single outside mention is The Conversation AU's "One Nation wants to cut
+the tobacco tax", which cites Singapore as a comparison case for illicit
+cigarettes. **Nothing else in 366 items from the non-Singapore sources refers
+to Singapore at all.** That is the fourth sweep's conclusion arriving from the
+other direction: the regional gap is not that Singapore content ranks poorly,
+it is that no configured general or journal source produces any.
+
+### Annals is Singapore-published, not Singapore-topical
+
+Worth stating plainly, because a keyword scan says otherwise and the source
+inventory can be read as promising more than it delivers. Seven of the ten
+Annals items in the window match "Singapore" **only in the WordPress footer**
+`The post … appeared first on Annals Singapore.` — a generator artifact, not
+content. Of the three that mention Singapore in the body, all three do so as
+one country among several:
+
+| Item | Where Singapore appears |
+|---|---|
+| Stroke publications in Southeast Asia | in the ASEAN member-state list |
+| Training for constraint in Southeast Asia | one worked example of a well-resourced system |
+| Interpreting multivariable regression coefficients | a 2010 Singapore paper, cited in passing |
+
+The rest of the window is China's school myopia programme, dementia burden in
+China, and three case reports. So Annals earns its weight as **Singapore's own
+peer-reviewed journal covering the region** — which is what the second sweep
+actually measured — and MOH is the only source of Singapore-*specific* health
+news the digest has. The [second sweep](#annals-academy-of-medicine-singapore--added)
+overstated the case in calling it "heavily Singapore and South-East Asia
+weighted"; South-East Asia, yes, Singapore, only by authorship.
+
+### What reaches the reader
+
+Two of the eleven items in the issue built from this poll are Singapore's:
+
+| Rank | Score | Item |
+|---|---|---|
+| 6 / 416 | 3.108 | MOH — Treatment Guidelines for Children and Adolescents with Gender Dysphoria |
+| 25 / 416 | 2.798 | Annals — Training for constraint in Southeast Asia |
+
+That is the ratio working as designed: 12% of the store, 18% of the issue.
+MOH's remaining 39 records rank 84th and below, because 31 of the 40 are
+Parliamentary QA — the burst the survey predicted, and the reason `moh_sg`
+sits in a `min: 0` section.
+
+| MOH category | Records in the window |
+|---|---|
+| Parliamentary QA | 31 |
+| Speeches | 5 |
+| Forum Replies | 2 |
+| Press Releases | 2 |
+
+### Two defects the scan turned up in the Annals text
+
+**Fixed: the WordPress footer was being stored as body text.** Every item from
+the two WordPress feeds — Annals and the JME blog, 20 of 416 — carried
+`The post <title> appeared first on <site>.` at the end of its summary. For a
+long article that is invisible, since the extract is cut from the front. For
+the shortest it is the whole extract: `Continuing Medical Education` has a
+178-character body against the `journals` section's 180-character budget, so
+it rendered as a digest block whose entire text was boilerplate. `sources/rss.py`
+now drops the footer, anchored at the end so it cannot eat real prose;
+`tests/fixtures/annals_sg_rss2.xml` pins it.
+
+**Not fixed, and deliberately: Annals PDF-only items carry a stub, not full
+text.** Four of the ten items in the window are published as a PDF and ship
+only `This article is available only as a PDF. Please click on "Download PDF"
+on top to view the full article.`, sometimes after an abstract — 178, 601, 979
+and 1,099 characters against the 10,000–39,000 the source inventory quotes.
+The inventory's "roughly one item in ten is an administrative CME post" is
+therefore an undercount of the effect; it is four in ten, and three of them
+are case reports rather than CME notices. No handling is needed all the same,
+and this sweep measured why rather than assuming it: they rank 190th, 234th,
+312th and 353rd of 416, so the quotas drop them without help.
+
+One more, recorded so it is not re-reported as a bug: stored text can contain
+literal `<sub>` and similar, because `clean_text` strips tags *before*
+unescaping entities. That order is correct and should stay — swapping it makes
+`p &lt; 0.05) but q &gt; 0.1` collapse to `p 0.1`, and medical abstracts are
+full of exactly that. Escaped markup surviving as visible text is the cheaper
+failure, and `digest/render.py` escapes on output, so it can never break a
+Telegram send.
+
+### Domains: 56 hosts probed
+
+Every Singapore health, hospital, university, agency and news domain that has
+appeared in this survey, plus the clusters and statutory boards it never
+listed, re-probed from this session on 2026-08-27.
+
+**Reachable** — CONNECT succeeds and the origin answers:
+
+| Host | What it is | State |
+|---|---|---|
+| `annals.edu.sg` | Annals, AMS | configured source |
+| `www.moh.gov.sg` | MOH newsroom | configured source |
+| `www.straitstimes.com` | Straits Times | rejected, first sweep |
+| `www.channelnewsasia.com` | CNA | rejected, third and fourth sweeps |
+| `news.nus.edu.sg` | NUS Newsroom | rejected, second sweep |
+| `medicalchannelasia.com` | Medical Channel Asia | rejected, second sweep |
+| `healthcareasiamagazine.com` | Healthcare Asia | rejected, second sweep |
+| `pubmed.ncbi.nlm.nih.gov` | PubMed | **rejected here — see below** |
+| `www.koreabiomed.com` | Korea Biomedical Review | **newly open — measured below** |
+
+**Blocked at CONNECT by this session's egress policy** (gateway answers 403;
+a property of where the check ran, not of the host). None has ever been
+measured, in any sweep:
+
+*Clusters and hospitals* — `www.singhealth.com.sg`, `www.nuhs.edu.sg`,
+`www.nhg.com.sg`, `www.sgh.com.sg`, `www.ttsh.com.sg`, `www.ktph.com.sg`,
+`www.cgh.com.sg`, `www.kkh.com.sg`, `www.nccs.com.sg`, `www.nhcs.com.sg`,
+`www.imh.com.sg`, `www.ncid.sg`
+
+*Agencies and statutory boards* — `www.hsa.gov.sg`, `www.hpb.gov.sg`,
+`www.healthhub.sg`, `www.aic.sg`, `www.synapxe.sg`, `www.smc.gov.sg`,
+`www.gov.sg`, `data.gov.sg`
+
+*Professional bodies and universities* — `www.sma.org.sg`, `www.smj.org.sg`,
+`www.a-star.edu.sg`, `www.nus.edu.sg`, `www.ntu.edu.sg`
+
+*Other Singapore media* — `www.todayonline.com`, `www.businesstimes.com.sg`,
+`mothership.sg`, `www.asiaone.com`, `www.asianscientist.com`,
+`www.healthxchange.sg`
+
+Two behave differently and are worth distinguishing: `lkcmedicine.ntu.edu.sg`
+answers CONNECT with **502**, matching the gateway error recorded in
+[status.md](status.md#sources-that-do-not-work) but still through a blocked
+path, so it remains unconfirmed; and `smj.org.sg` is the one apex the policy
+does allow, but the origin resets the connection, while `www.smj.org.sg` is
+refused at CONNECT — the apex/`www` trap that cost CNA a round, in a new place.
+
+The list is long, but the fourth sweep's conclusion holds and this sweep does
+not reopen it: these are institutional PR and consumer-health sites, and the
+one class of them that has been measured — NUS Newsroom, Duke-NUS, NUS
+Medicine, LKC — produced no feed and no health signal. Opening them is worth
+asking for only if a consumer-health or institutional-research section is ever
+wanted.
+
+### Correction: Duke-NUS is not "reachable with no feed"
+
+The [Confirmed dead](#confirmed-dead) table says the Imperva block "has lifted
+and there is simply nothing to poll". **That is wrong, and the evidence that
+produced it was a challenge page.** Every Duke-NUS path answers with a
+212-byte Incapsula stub:
+
+```html
+<html><head><META NAME="robots" CONTENT="noindex,nofollow">
+<script src="/_Incapsula_Resource?SWJIYLWA=5074a744e2e3d891814e9a2dace20bd4,…">
+</script><body></body></html>
+```
+
+`/allnews/rss` and `/newshub/rss` return it with a 200, which is what "HTML
+with a 200" meant; `/feed` and `/rss.xml` return it with a 404. So Duke-NUS is
+**still blocked**, and whether it publishes a feed is unknown rather than
+answered. The table has been corrected. This is the same trap `sources/rss.py`
+already guards against for feeds — a 200 that is a challenge page — and it is
+worth remembering that it catches sweeps too, not just the poller.
+
+`medicine.nus.edu.sg/feed/` is unaffected: it returns a genuine
+`text/xml` `wp_die` 500, which is the origin talking. That finding stands.
+
+### PubMed: open, and still not usable
+
+`pubmed.ncbi.nlm.nih.gov` was opened in the second sweep and never tested. It
+is the obvious route to Singapore-affiliated research — `Singapore[Affiliation]`
+is a precise query in a way a news keyword filter never is. It fails twice
+over:
+
+- `robots.txt` carries `Disallow: /rss` **and** `Disallow: /api`. A poller is
+  a crawler, which is the reading the fourth sweep settled on for CNA.
+- The RSS path needs a server-generated key; `?term=` alone returns the search
+  page as HTML, not a feed. The E-utilities host that would sidestep this,
+  `eutils.ncbi.nlm.nih.gov`, is refused at CONNECT.
+
+Not retryable without both a different egress and a reading of `robots.txt`
+that this project has already declined to make.
+
+### Korea Biomedical Review: measured at last
+
+The last open item on the survey. `www.koreabiomed.com` is **open as of
+2026-08-27**, and `koreabiomed.com` now redirects into it successfully.
+
+```
+koreabiomed        200      50 2026-08-26   50    300  ok — 2d window, daily poll required
+```
+
+Fifty items, RSS 2.0, parses through `sources/rss.py` unchanged, English
+throughout, and `robots.txt` disallows only `/admin/`. The register is better
+than expected and better than Healthcare Asia's: only 3 of 50 headlines read
+as market or deal news, and the window carries pediatric palliative care
+missing from 10 of Korea's 16 regions, free flu vaccination widened to age 14,
+a septic-shock death and the case for pediatric emergency rooms, and a health
+minister's "quiet" reform agenda. That is health policy and health-system
+journalism — the register this digest wants.
+
+Two things to weigh before it is added, which is why this sweep measures
+rather than promotes it:
+
+- **Volume.** Fifty items across a 2-day window is ~175 a week, which would
+  roughly double the store's weekly intake on its own. Daily polling covers a
+  2-day window, but only just.
+- **It is Korea.** The audience is Singaporean, and the case for a Korean
+  trade title is weaker than the case for the regional Lancet titles already
+  configured. It is the strongest remaining candidate on this survey and the
+  decision is a content one, not a technical one.
+
+**The survey now has no unmeasured candidates.**
+
+---
+
 ## Recommendation
 
 1. ~~Add `lancet_wpc` and `lancet_sea`~~ — **done.** Both in `sources.yaml` at
@@ -510,9 +741,18 @@ health-section feed, which would show up on `/rss` and in `robots.txt`.
    works. The rows stay in `candidates-asia.yaml`, disabled, as the record.
    Reopen only if CNA ships a health-section feed, which would appear on `/rss`
    and in `robots.txt`.
-6. **Get `www.koreabiomed.com` opened** — the `www` host specifically; the apex
-   alone only `301`s to it, which the policy still refuses. This is the last
-   unmeasured candidate on the survey.
+6. ~~Get `www.koreabiomed.com` opened~~ — **done, and measured** in the fifth
+   sweep. Fifty items, RSS 2.0, parses unchanged, genuinely health-policy in
+   register. Not promoted: it is Korea rather than Singapore, and ~175 items a
+   week would roughly double the store's intake. **The survey now has no
+   unmeasured candidates** — adding it is a content decision, not a technical
+   one.
+7. **Decide whether the Singapore institutional hosts are worth opening.** The
+   fifth sweep found 31 of them still refused at CONNECT and never measured —
+   the clusters, the hospitals, HSA, HPB, HealthHub, SMA, SMJ, A\*STAR. The
+   prior on them is poor: every Singapore institution that *has* been measured
+   published no feed. Worth asking for only alongside a consumer-health or
+   institutional-research section.
 
 With CNA settled, the Singapore general-news gap is closed as *unfillable*
 rather than open: the Straits Times, NUS Newsroom and CNA all failed the same
@@ -521,4 +761,7 @@ remains the only route to that content, and it needs a URL-resolution step
 first.
 
 The config is now at eighteen sources, all verified reachable, with the
-regional four carrying Asia and Singapore.
+regional four carrying Asia and Singapore. The fifth sweep measured what that
+buys: 12% of the store is Singapore-published, 18% of a built issue is, and
+**MOH is the only source of Singapore-specific health news in the set** —
+Annals is Singapore's journal covering the region, not Singapore.
