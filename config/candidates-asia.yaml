@@ -20,8 +20,8 @@
 # block.
 #
 # Fifth sweep, 2026-08-27: www.koreabiomed.com opened and was measured, so
-# NOTHING ON THIS SURVEY IS UNMEASURED ANY MORE. It is a good feed and was not
-# promoted only because it is Korea and high-volume — see its row. The sweep
+# NOTHING ON THIS SURVEY IS UNMEASURED ANY MORE. It measured well and was
+# REJECTED anyway, on fit — see its row. The sweep
 # also re-probed every Singapore host: 31 institutional ones are still refused
 # at CONNECT and have never been measured, and Duke-NUS turned out to be
 # Incapsula-blocked rather than feed-less. Full write-up in docs/asia-sources.md.
@@ -255,8 +255,9 @@ sources:
     weight: 0.8
     sections: [also_reading, policy]
     notes: >
-      MEASURED 2026-08-27, and the decision is a content one. www.koreabiomed.com
-      is open at last, and the apex now redirects into it cleanly.
+      MEASURED AND REJECTED 2026-08-27. www.koreabiomed.com is open at last, and
+      the apex now redirects into it cleanly, so the survey's last unmeasured
+      candidate finally has an answer.
 
       The feed is good: 50 items, RSS 2.0, parses through sources/rss.py
       unchanged, English throughout, ~300-character summaries, newest same-day,
@@ -266,12 +267,18 @@ sources:
       palliative care missing from 10 of Korea's 16 regions, free flu
       vaccination widened to age 14, and a health minister's reform agenda.
 
-      Left disabled for two reasons, neither technical. It is Korea, and the
-      audience is Singaporean — a weaker case than the regional Lancet titles
-      already configured. And 50 items across a 2-day window is ~175 a week,
-      which would roughly double the store's weekly intake on its own. Enable
-      it if a Korean or wider-Asia trade voice is wanted; nothing else is
-      needed to make it work.
+      REJECTED 2026-08-27, on fit rather than on anything wrong with the feed.
+      It is Korea and the audience is Singaporean — a weaker case than the
+      regional Lancet titles already configured, which cover South-East Asia
+      and the Western Pacific as a region rather than one other country. And 50
+      items across a 2-day window is ~175 a week, which would roughly double
+      the store's weekly intake on its own, for a country this audience has no
+      particular stake in.
+
+      Nothing here needs fixing to make it work: it parses today and would ship
+      tomorrow if the audience were different. Kept disabled as the record, the
+      same as CNA and the Straits Times, so no later sweep re-litigates it.
+      Reopen only if the digest ever wants a wider East Asia desk.
 
   - key: healthcareasia
     name: Healthcare Asia Magazine

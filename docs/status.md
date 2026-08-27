@@ -129,6 +129,7 @@ re-litigates them. Full measurements in [asia-sources.md](asia-sources.md).
 | **Healthcare Asia Magazine** | Investor and market trade press; feed also malformed (`<title>` carries a summary, summaries empty) |
 | **Medical Channel Asia** | Consumer wellness rather than medicine. The best feed of its kind found — reconsider only if a consumer-health section is ever wanted |
 | **Google News** (SG healthcare query) | Genuinely on-topic, but items link to `news.google.com` redirects rather than publisher URLs, which breaks the store's canonical-URL identity. Would need a URL-resolution step first |
+| **Korea Biomedical Review** | Rejected on **fit**, not on quality — the one candidate here whose feed is fine. 50 items, RSS 2.0, parses unchanged, and genuinely health-policy in register. But it is Korea and the audience is Singaporean, and ~175 items a week would roughly double the store's intake for a country this audience has no particular stake in. Reopen only if the digest ever wants a wider East Asia desk |
 
 The Singapore general-news gap is now closed as **unfillable** rather than open:
 the Straits Times, NUS Newsroom and CNA all fail the same way — filtering a
@@ -147,13 +148,6 @@ Judgement calls rather than gaps.
       this as *blocked* rather than *failed*, so it costs nothing else. `poll`'s
       summary line is where to notice it — a source blocked every day is a
       source that is not in the digest, and nothing else will say so.
-- [ ] **Whether to add Korea Biomedical Review.** `www.koreabiomed.com` opened
-      and was measured on 2026-08-27, closing the survey's last unmeasured
-      candidate. It is a good feed — 50 items, RSS 2.0, parses unchanged, and
-      health-policy rather than market news in register. Two reasons it was not
-      promoted on the spot: it is Korea rather than Singapore, and at ~175 items
-      a week it would roughly double the store's intake. A content call, not a
-      technical one — [asia-sources.md, fifth sweep](asia-sources.md).
 - [ ] **Add HSA — the highest-value item on the survey.** The institutional
       hosts were opened and swept on 2026-08-27: 21 publish no feed, as the
       prior said. HSA overturns it, because "no feed" was the wrong question.
@@ -200,9 +194,12 @@ Judgement calls rather than gaps.
 - [x] CNA evaluated and rejected — the last regional candidate that
       needed measuring; see the decision log below
 - [x] Singapore coverage audited against the live corpus, and every candidate
-      on the regional survey now measured — including `koreabiomed`, the last
-      one outstanding. The audit fixed a WordPress footer that was being stored
-      as body text and corrected the Duke-NUS entry above
+      on the regional survey measured **and decided** — `koreabiomed`, the last
+      one outstanding, measured well and was rejected on fit. The audit fixed a
+      WordPress footer that was being stored as body text and corrected the
+      Duke-NUS entry above
+- [x] The Singapore institutional hosts opened and swept — 21 publish no feed,
+      and HSA turned out to ship a MOH-style index instead
 
 ---
 
@@ -212,6 +209,7 @@ Dated decisions, newest first. Each links to where the reasoning lives.
 
 | Date | Decision |
 |---|---|
+| 2026-08-27 | **Korea Biomedical Review rejected**, closing the last candidate on the regional survey. Not a quality call — the feed parses unchanged and its register (pediatric palliative care gaps, vaccination policy, health-system reform) is what the digest wants. A fit call: it is Korea, the audience is Singaporean, and ~175 items a week would roughly double the store's intake for a country this audience has no particular stake in. Row kept disabled in `candidates-asia.yaml` as the record — [asia-sources.md, fifth sweep](asia-sources.md) |
 | 2026-08-27 | **Singapore institutional hosts opened and swept** — 8 blocked, 3 challenge, 7 feed, 21 no feed. The prior held (no Singapore institution publishes a feed) but stopped at the wrong question: **HSA ships the same Isomer Next index MOH does, and `sources/moh.py` parses it unchanged** — ~3.1 items/week of recalls and safety advisories, and the second source of Singapore-specific health news the set could have. HPB is the same platform but 0.1/week and three months stale; SMC is Isomer with no article index. Also found: NHG has consolidated TTSH, KTPH, IMH and NCID onto one host, so two hosts replace five; `lkcmedicine.ntu.edu.sg` has no DNS record, which explains its long-standing 502; and `www.smj.org.sg` is refused by the host rather than the policy — [asia-sources.md, sixth sweep](asia-sources.md) |
 | 2026-08-27 | **Singapore coverage audited end to end, and the last candidate measured.** All 18 sources polled (416 items): 50 are Singapore-published, and exactly 1 of the other 366 mentions Singapore at all. Annals is Singapore's journal covering the *region*, not Singapore — 7 of its 10 items match "Singapore" only in a WordPress footer — so **MOH is the digest's only source of Singapore-specific health news**. Fixed a real defect the audit surfaced: that footer was being stored as body text, and for Annals' shortest item it *was* the whole rendered extract. `www.koreabiomed.com` opened and was measured; 31 Singapore institutional hosts remain refused at CONNECT and unmeasured; the Duke-NUS "reachable, no feed" note was corrected to "still Incapsula-blocked" — [asia-sources.md, fifth sweep](asia-sources.md) |
 | 2026-08-27 | **CNA closed for good.** A fourth sweep tried every remaining delivery route: the robots-allowed `/api/v1/google-news-feed` (full text, but a 9.3-hour window at ~129 items/day and no category filter), the news sitemap, scraping the health sections (no dates at all, and evergreen rather than current), Drupal JSON:API (403), per-topic feeds (404), the `cnalifestyle` subdomain (blocked), and Google News with `when:7d` (68% radio and TV segments, and no publisher URL anywhere). The blocker is upstream of delivery: CNA barely publishes health journalism — [asia-sources.md, fourth sweep](asia-sources.md) |

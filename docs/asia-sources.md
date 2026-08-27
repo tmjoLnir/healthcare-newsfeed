@@ -615,7 +615,7 @@ listed, re-probed from this session on 2026-08-27.
 | `medicalchannelasia.com` | Medical Channel Asia | rejected, second sweep |
 | `healthcareasiamagazine.com` | Healthcare Asia | rejected, second sweep |
 | `pubmed.ncbi.nlm.nih.gov` | PubMed | **rejected here — see below** |
-| `www.koreabiomed.com` | Korea Biomedical Review | **newly open — measured below** |
+| `www.koreabiomed.com` | Korea Biomedical Review | newly open — measured below, and rejected |
 
 **Blocked at CONNECT by this session's egress policy** (gateway answers 403;
 a property of where the check ran, not of the host). None has ever been
@@ -718,10 +718,12 @@ over:
 Not retryable without both a different egress and a reading of `robots.txt`
 that this project has already declined to make.
 
-### Korea Biomedical Review: measured at last
+### Korea Biomedical Review: measured at last, and rejected
 
 The last open item on the survey. `www.koreabiomed.com` is **open as of
-2026-08-27**, and `koreabiomed.com` now redirects into it successfully.
+2026-08-27**, and `koreabiomed.com` now redirects into it successfully — so it
+could finally be measured, and the answer is a good feed that is nonetheless
+the wrong one for this audience.
 
 ```
 koreabiomed        200      50 2026-08-26   50    300  ok — 2d window, daily poll required
@@ -736,18 +738,25 @@ a septic-shock death and the case for pediatric emergency rooms, and a health
 minister's "quiet" reform agenda. That is health policy and health-system
 journalism — the register this digest wants.
 
-Two things to weigh before it is added, which is why this sweep measures
-rather than promotes it:
+**Rejected all the same, on 2026-08-27.** Liveness and register were never the
+whole bar, and two things decide against it:
 
+- **It is Korea.** The audience is Singaporean and the digest publishes on
+  `Asia/Singapore` time. A Korean trade title is a weaker fit than the regional
+  Lancet titles already configured, which at least cover South-East Asia and
+  the Western Pacific as a region rather than one other country.
 - **Volume.** Fifty items across a 2-day window is ~175 a week, which would
-  roughly double the store's weekly intake on its own. Daily polling covers a
-  2-day window, but only just.
-- **It is Korea.** The audience is Singaporean, and the case for a Korean
-  trade title is weaker than the case for the regional Lancet titles already
-  configured. It is the strongest remaining candidate on this survey and the
-  decision is a content one, not a technical one.
+  roughly double the store's weekly intake on its own — for a country the
+  audience has no particular stake in. Daily polling covers a 2-day window,
+  but only just, so it would also be the second-tightest retention in the set.
 
-**The survey now has no unmeasured candidates.**
+This is a fit decision rather than a technical one: nothing about the feed is
+wrong, and it would work tomorrow if the audience were different. The row stays
+in `candidates-asia.yaml`, disabled, as the record — the same treatment CNA and
+the Straits Times get, so no later sweep re-litigates it. Reopen only if the
+digest ever wants a wider East Asia desk.
+
+**The survey now has no unmeasured candidates, and no open ones.**
 
 ---
 
@@ -810,7 +819,8 @@ before it ships: MOH's Terms of Use are restrictive and HSA is a different agenc
 with its own, so start at `link_only`.
 
 Not done here, because it adds a source rather than measuring one, and that is
-the same content call `koreabiomed` is parked on.
+a content call rather than a measurement — but unlike `koreabiomed`, which was
+turned down on fit, HSA is Singapore's own regulator and the fit is the point.
 
 ### Same platform, no use
 
@@ -903,12 +913,12 @@ why it could be measured and rejected in the second sweep.
    works. The rows stay in `candidates-asia.yaml`, disabled, as the record.
    Reopen only if CNA ships a health-section feed, which would appear on `/rss`
    and in `robots.txt`.
-6. ~~Get `www.koreabiomed.com` opened~~ — **done, and measured** in the fifth
-   sweep. Fifty items, RSS 2.0, parses unchanged, genuinely health-policy in
-   register. Not promoted: it is Korea rather than Singapore, and ~175 items a
-   week would roughly double the store's intake. **The survey now has no
-   unmeasured candidates** — adding it is a content decision, not a technical
-   one.
+6. ~~Get `www.koreabiomed.com` opened~~ — **done, measured, and rejected.**
+   Opened and measured in the fifth sweep: a good feed, genuinely health-policy
+   in register. Turned down on 2026-08-27 all the same — it is Korea rather
+   than Singapore, and ~175 items a week would roughly double the store's
+   intake for a country this audience has no particular stake in. Row disabled
+   in `candidates-asia.yaml` as the record.
 7. ~~Decide whether the Singapore institutional hosts are worth opening~~ —
    **done, opened, and measured** in the sixth sweep. 21 of them publish no
    feed, which is what the prior said. But one overturned it:
