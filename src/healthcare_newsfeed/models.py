@@ -35,6 +35,12 @@ class Source:
     poll_hours: int = 24
     enabled: bool = True
     tolerate_failure: bool = False   # a flaky host must not fail the whole poll
+    # How many records one poll may take from a listing that has no feed and
+    # therefore no natural window. None leaves it to the adapter's default.
+    # It exists because the Isomer adapter serves two agencies publishing at
+    # very different rates, and a count that spans three weeks of MOH spans a
+    # quarter of a year of HSA — see sources/isomer.py.
+    max_items: int | None = None
 
 
 @dataclass

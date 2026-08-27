@@ -40,6 +40,7 @@ def sources(make_source):
     ("Measles outbreak spreads across the region", 0.85),       # global health
     ("Phase 3 trial of a new malaria vaccine", 0.85),           # strongest wins
     ("Can AI read a chest X-ray better than a registrar?", 0.70),
+    ("Recall of Carbimazole 5 Tablet 5 mg", 0.80),              # drug safety
 ])
 def test_a_headline_on_theme_scores_its_theme(make_item, title, expected):
     assert topic_fit(make_item(title)) == pytest.approx(expected, abs=0.11)
@@ -47,6 +48,30 @@ def test_a_headline_on_theme_scores_its_theme(make_item, title, expected):
 
 def test_an_off_topic_headline_scores_nothing(make_item):
     assert topic_fit(make_item("Local hospital opens new car park")) == 0.0
+
+
+def test_a_regulators_notice_is_not_invisible(make_item):
+    """A recall names a product, not a subject, so every other theme misses it.
+
+    HSA scored 0.00 on its whole output before `safety` existed — maximally
+    on-topic for this audience and unrankable — which is what the theme is
+    for. See sources/isomer.py and docs/asia-sources.md.
+    """
+    for title in ("Recall of B. Braun Ibuprofen Solution for Infusion 4mg/ml",
+                  "Class 2 recall: falsified batches of a diabetes pen",
+                  "Counterfeit medicine seized from unregistered sellers"):
+        assert topic_fit(make_item(title)) >= 0.80, title
+
+
+def test_the_safety_theme_stays_narrow(make_item):
+    """It was measured at 428 items and trimmed twice; these are what it cost.
+
+    `topic_fit` adds 0.1 of breadth per theme touched, so a loose list lifts
+    every long-text source a little while saying nothing true about it. An
+    advisory *group* is the false positive that took "advisory" out.
+    """
+    assert topic_fit(make_item("Ministerial Advisory Group reports on aged care")) == 0.0
+    assert topic_fit(make_item("A study of chemotherapy toxicity in older adults")) < 0.80
 
 
 def test_the_title_counts_for_more_than_the_body(make_item):

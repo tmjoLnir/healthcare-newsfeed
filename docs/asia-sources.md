@@ -90,7 +90,7 @@ CloudFront, and a cache hit is answered with the whole page and no
 7.5 MB, where the same request had returned 206 earlier the same day. The
 adapter therefore treats the range as an optimisation and the item cap as the
 contract — newest 40 records, whichever size arrives.
-`tools/moh_newsroom_probe.py` reports which of the two actually happened.
+`tools/isomer_newsroom_probe.py` reports which of the two actually happened.
 
 ### Volume
 
@@ -111,6 +111,7 @@ weeks, absent without padding when Parliament is quiet.
 ### What the adapter does
 
 Built as `sources/moh.py`, registered as the `moh_newsroom` adapter.
+*(Renamed in the [seventh sweep](#seventh-sweep--2026-08-27-hsa-shipped-and-the-adapter-generalised) to `sources/isomer.py` and `isomer_newsroom`, once HSA turned out to need the same parser.)*
 
 1. `GET https://www.moh.gov.sg/newsroom/` with `Range: bytes=0-500000`. The
    final `self.__next_f.push([1,"…"])` chunk is cut mid-string, so the parser
@@ -120,7 +121,7 @@ Built as `sources/moh.py`, registered as the `moh_newsroom` adapter.
 2. Decode each chunk **as a JSON string, not with `unicode_escape`**. That was
    the one real trap: `unicode_escape` round-trips through latin-1 and turns
    every multi-byte character into mojibake — 2,210 corrupted bytes on the live
-   page. The first version of `tools/moh_newsroom_probe.py` had this bug; the
+   page. The first version of `tools/isomer_newsroom_probe.py` had this bug; the
    probe now drives the adapter, so there is one parser rather than two.
 3. Read records one at a time from the first `"items":[`, since the byte range
    leaves the array unclosed — parsing it whole would fail on every real fetch.
@@ -895,6 +896,141 @@ why it could be measured and rejected in the second sweep.
 
 ---
 
+## Seventh sweep — 2026-08-27, HSA shipped and the adapter generalised
+
+The sixth sweep found HSA behind the institutional hosts and left adding it as
+the recommendation. This is what adding it took, and what it turned up.
+
+### The adapter is now the platform's, not MOH's
+
+`sources/moh.py` became `sources/isomer.py`, registered as `isomer_newsroom`.
+Only two things in it were ever MOH-specific — the item base and the slug
+prefix records hang off — and both come from the source's own `url` now:
+
+```yaml
+url: https://www.hsa.gov.sg/announcements/   # → base and /announcements/ prefix
+```
+
+So a third Isomer listing is a config row and no code. Everything else — the
+byte range, the mid-string cut, the `"])`-inside-a-string trap, the JSON-string
+decode, the title recasing — applied to HSA unchanged. `title_case` is a no-op
+for it, because HSA does not publish in capitals and the function already left
+a non-shouted headline alone.
+
+Three tests exist to keep it that way, and each fails against the hardcoding it
+replaced: HSA items linking to `moh.gov.sg`, a listing reading another
+listing's records, and a source ignoring its own cap.
+
+### The record cap had to become per-source
+
+`MAX_ITEMS = 40` was sized against MOH's Parliamentary QA bursts and reaches
+back 21 days. At HSA's rate the same 40 records reach back **ninety**. That
+matters because `window()` selects on when an item was *stored*, so the first
+poll makes every record a candidate for that week's issue — the failure the cap
+was introduced to prevent, reappearing on a second source.
+
+`max_items` is therefore a source field now. HSA polls 12, measured at 27 days
+of history against moh_sg's 40 at 23 — the same margin, arrived at by counting
+each agency's own output rather than sharing a number.
+
+### What HSA actually publishes
+
+`tools/isomer_newsroom_probe.py` (renamed with the adapter, and now reading the
+row from `sources.yaml` rather than carrying a second copy of it) reports:
+
+```
+$ python tools/isomer_newsroom_probe.py hsa_sg
+HTTP 206 — 500,001 bytes (asked for 500,000, granted)
+HSA Singapore (hsa_sg) — 12 items, capped at 12
+  7d   3   Product Recalls 2, Press Releases 1
+  30d  12   Product Recalls 5, Press Releases 4, Consumer Safety Articles 1,
+            Public Consultations 1, Dear Healthcare Professional Letters 1
+the fetched window covers 27 days of history
+```
+
+Licence is `link_only`. HSA's Terms of Use (last updated 13 March 2026) permit
+the site "for your own personal use" at 1, and 4.3 requires written permission
+to reproduce anything beyond what the Copyright Act allows. The same position
+as MOH, and the index carries no `description` regardless, so items render as
+title and link.
+
+### The scorer could not see it — and that was the scorer's fault
+
+The finding worth recording. Configured and polled for real, **every HSA recall
+scored `topic_fit` = 0.00**:
+
+| Item | topic_fit before |
+|---|---|
+| Recall of Carbimazole 5 Tablet 5 mg | **0.00** |
+| Advisory on the Use of Ivermectin for Unproven Clinical Uses | **0.00** |
+| Recall of B. Braun Ibuprofen Solution for Infusion 4mg/ml | **0.00** |
+| HSA Charges 27-year-old Male for Alleged Trafficking of Etomidate | **0.00** |
+
+Not because they are off-topic — they are the most clinically direct items in
+the store — but because **a recall names a product rather than a subject**, and
+every theme in `TOPICS` was a subject list. MOH escapes this only because its
+headlines are written in policy language: "Reviewing MediSave Withdrawal
+Limits" scores 0.85 on `policy` where "Recall of Carbimazole" scores nothing.
+
+So `score.py` gained a `safety` theme at weight 0.80 — under `policy`, over
+`treatment`. Pharmacovigilance is interview material in its own right, and the
+gap was there before HSA arrived: it was simply invisible while no source
+published safety notices.
+
+**It was measured before it was kept, and trimmed twice.** `topic_fit` adds 0.1
+of breadth for every theme an item touches, so a list that matches loosely in a
+lede lifts every long-text source a little while saying nothing true about it:
+
+| Candidate word | Hits in a 428-item week | Kept? |
+|---|---|---|
+| `recall*` | 7 — six product recalls, one doctor *recalling* an outbreak | yes |
+| `advisory` | 4 — one safety advisory, a Ministerial **Advisory Group**, an advisory committee | **no, 25% precision** |
+| `batch*`, `defect*`, `toxicity`, `poisoning` | dropped before measuring — ordinary words in trial abstracts | no |
+
+The result is the point: with `safety` in place the built issue is
+**byte-identical** to the build without it. It touches nothing that was already
+ranking, and lifts HSA's best item from 148th of 428 to **71st**.
+
+### HSA published nothing this week, and that is worth stating plainly
+
+The sixth sweep rejected CNA partly on rank — its best item was 146th of 431.
+HSA's best was 148th of 428 before the `safety` theme, which is close enough
+that the comparison has to be made rather than avoided.
+
+They are not the same case, and the difference is not rank:
+
+|  | CNA | HSA |
+|---|---|---|
+| Items ingested per week | ~150 | ~3 |
+| On-topic share | 1 health item in 40 | 12 of 12 |
+| Best item, ranked | 146 / 431 | **71** / 428 with `safety` |
+| Section it competes for | `also_reading`, always contested | `policy`, `min: 0` and usually empty |
+
+CNA's cost was 150 items a week of general news for nothing. HSA's is twelve
+records a poll, all of them health-regulatory. And this week the `policy` slot
+went to KFF at 2.680 on merit, then the one-message budget trimmed the section
+entirely — so nothing about the week says HSA cannot fill it in another.
+
+That is the honest state: **HSA is configured, verified, and did not appear in
+the issue built on the day it shipped.** Worth re-checking after a few weeks —
+if it has still published nothing by then, the row should be re-argued rather
+than left to sit.
+
+### Also swept
+
+`www.aic.sg` was opened and measured: **no feed**, joining the twenty-two.
+
+NHG has moved again, and the redirect moved with it. `corp.nhg.com.sg` was
+opened and `301`s to the **apex** `nhghealth.com.sg` — not to `www` — which is
+not open. The fifth sweep's rule was "the allowlist entry has to name the `www`
+host"; the accurate form is **name the host the redirect lands on**, whichever
+it is. `www.nhghealth.com.sg` is open but answers `429` persistently, across
+probes forty minutes apart. `verify_feeds.py` and `poll` both class 429 as
+*blocked* rather than broken, which is the BMJ position — a host gating a
+shared egress address — so NHG is not measured either way yet.
+
+---
+
 ## Recommendation
 
 1. ~~Add `lancet_wpc` and `lancet_sea`~~ — **done.** Both in `sources.yaml` at
@@ -922,20 +1058,19 @@ why it could be measured and rejected in the second sweep.
 7. ~~Decide whether the Singapore institutional hosts are worth opening~~ —
    **done, opened, and measured** in the sixth sweep. 21 of them publish no
    feed, which is what the prior said. But one overturned it:
-8. **Add HSA.** `www.hsa.gov.sg/announcements/` is Isomer Next like MOH, and
-   `sources/moh.py` parses it with only `ITEM_BASE` and `RECORD_RE` repointed —
-   both derivable from the source's own `url`. ~3.1 items a week of product
-   recalls, safety advisories, Dear Healthcare Professional letters and
-   regulatory updates: Singapore's drug and device regulator, and the closest
-   thing to an FDA/MHRA safety stream this set has had. Check its Terms of Use
-   and start at `link_only`. **This is the highest-value open item on the
-   survey.**
-9. **Open three more hosts, and retire two.** `www.aic.sg` was missed in the
-   opening. `corp.nhg.com.sg` and `www.nhghealth.com.sg` replace five rows,
-   because NHG has consolidated TTSH, KTPH, IMH and NCID onto one host. Retire
-   `lkcmedicine.ntu.edu.sg`, which has no DNS record at all (the school is at
-   `www.ntu.edu.sg/medicine` now), and `www.smj.org.sg`, which the *host*
-   refuses — a TLS reset from a datacenter address, the position BMJ is in.
+8. ~~Add HSA~~ — **done**, in the seventh sweep. `sources/moh.py` generalised
+   to `sources/isomer.py`, `max_items` became a source field, and `score.py`
+   gained a `safety` theme because HSA's recalls scored 0.00 on every existing
+   one. Configured at weight 1.0, `link_only`, 12 records a poll. It published
+   nothing in the issue built the day it shipped — re-check in a few weeks and
+   re-argue the row if that has not changed.
+9. **Open `nhghealth.com.sg` — the apex.** `www.aic.sg` was opened and swept
+   (no feed). `corp.nhg.com.sg` was opened too and buys nothing, because it
+   `301`s to the apex rather than to `www`; `www.nhghealth.com.sg` is open but
+   answers 429 persistently. Retire `lkcmedicine.ntu.edu.sg`, which has no DNS
+   record at all (the school is at `www.ntu.edu.sg/medicine` now), and
+   `www.smj.org.sg`, which the *host* refuses — a TLS reset from a datacenter
+   address, the position BMJ is in.
 
 With CNA settled, the Singapore general-news gap is closed as *unfillable*
 rather than open: the Straits Times, NUS Newsroom and CNA all failed the same
@@ -949,6 +1084,8 @@ buys: 12% of the store is Singapore-published, 18% of a built issue is, and
 **MOH is the only source of Singapore-specific health news in the set** —
 Annals is Singapore's journal covering the region, not Singapore.
 
-The sixth sweep is what changes that. HSA is the second such source, it is
-pollable with the adapter already in the tree, and at ~3.1 items a week it
-would roughly triple the Singapore-specific supply.
+The sixth and seventh sweeps changed that. **HSA is the second such source and
+is now configured** — the adapter it needed was already in the tree, and at
+~3.1 items a week it roughly triples the Singapore-specific supply on offer.
+Whether the ranking lets any of it through is the open question the seventh
+sweep leaves.

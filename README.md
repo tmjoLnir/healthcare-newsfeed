@@ -2,7 +2,7 @@
 
 A weekly healthcare-news digest for aspiring doctors, delivered as a Telegram DM.
 
-Eighteen sources are polled daily, deduplicated and ranked; once a week the best
+Nineteen sources are polled daily, deduplicated and ranked; once a week the best
 dozen items are assembled into a structured issue and posted. The audience is
 pre-med and medical-school applicants, so selection favours what actually helps
 at interview — ethics, health policy, global health and new treatments — over
@@ -181,7 +181,7 @@ Two rules the adapter and store divide between them:
 
 ```
 config/
-  sources.yaml        18 sources: weights, sections, licences, retention data
+  sources.yaml        19 sources: weights, sections, licences, retention data
   digest.yaml         section order, headings, per-section quotas
   candidates-asia.yaml        the Asia survey, re-runnable in one command
   sg-institutional-hosts.txt  Singapore hosts still awaiting an egress allowlist
@@ -189,7 +189,7 @@ src/healthcare_newsfeed/
   models.py           Source, RawItem, Item, Section, Digest, Licence
   config.py           YAML loading and validation
   store.py            SQLite persistence (items · issues · polls)
-  sources/            base.py (protocol) · rss.py · who.py · moh.py
+  sources/            base.py (protocol) · rss.py · who.py · isomer.py
   pipeline/           dedupe.py · score.py · select.py
   digest/             template.py (section specs) · render.py (Telegram HTML)
   telegram.py         Bot API client — sendMessage, retries, redaction
@@ -197,6 +197,7 @@ src/healthcare_newsfeed/
 tools/
   verify_feeds.py     feed health checker — is this known feed healthy?
   probe_feeds.py      feed discovery — given a hostname, is there one at all?
+  isomer_newsroom_probe.py  what a poll of an Isomer listing would collect
   store_sync.sh       carry the store between runs via a Release asset
 tests/                offline, fixture-driven
 ```

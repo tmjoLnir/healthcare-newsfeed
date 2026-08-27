@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
-"""Report what a MOH poll would see.
+"""Report what a poll of an Isomer listing would see.
 
-MOH publishes no feed, so `verify_feeds.py`'s reachability and retention
-numbers do not apply to it. This prints the same kind of summary from the
-newsroom index instead: how many items land in each window, split by MOH's
-own categories, and the newest few by name.
+The Singapore agencies on Isomer Next publish no feed, so `verify_feeds.py`'s
+reachability and retention numbers do not apply to them. This prints the same
+kind of summary from the listing index instead: how many items land in each
+window, split by the agency's own categories, and the newest few by name.
 
-It drives `sources/moh.py`, so what it reports is what the poller would
-store — including the byte-range request and the recasing of MOH's
-all-capitals headlines.
+It drives `sources/isomer.py`, so what it reports is what the poller would
+store — including the byte-range request, the per-source record cap, and the
+recasing of MOH's all-capitals headlines.
+
+Reads the source row from config/sources.yaml, so the cap and the url are the
+configured ones rather than a second copy of them here.
 
 Usage:
-    python tools/moh_newsroom_probe.py [--days N] [--json out.json]
-    python tools/moh_newsroom_probe.py --whole-page   # ignore the byte range
+    python tools/isomer_newsroom_probe.py [KEY] [--days N] [--json out.json]
+    python tools/isomer_newsroom_probe.py hsa_sg
+    python tools/isomer_newsroom_probe.py --whole-page   # ignore the byte range
+
+KEY is a source key using the isomer_newsroom adapter; it defaults to moh_sg.
 """
 
 from __future__ import annotations
@@ -26,35 +32,47 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from healthcare_newsfeed.models import Licence, Source
+from healthcare_newsfeed.config import load_sources
 from healthcare_newsfeed.sources.base import FeedError
-from healthcare_newsfeed.sources.moh import (
+from healthcare_newsfeed.sources.isomer import (
     MAX_ITEMS,
     WINDOW_BYTES,
-    MohNewsroomAdapter,
+    IsomerNewsroomAdapter,
 )
 
-SOURCE = Source(
-    key="moh_sg", name="MOH Singapore", url="https://www.moh.gov.sg/newsroom/",
-    adapter="moh_newsroom", licence=Licence.LINK_ONLY, weight=1.0,
-    sections=("policy", "also_reading"),
-)
+CONFIG = Path(__file__).resolve().parent.parent / "config" / "sources.yaml"
+ADAPTER_NAME = "isomer_newsroom"
+
+
+def load_source(key: str):
+    """The configured row for `key`, so the probe cannot drift from the poll."""
+    rows = {source.key: source for source in load_sources(CONFIG)}
+    source = rows.get(key)
+    if source is None or source.adapter != ADAPTER_NAME:
+        usable = sorted(k for k, row in rows.items() if row.adapter == ADAPTER_NAME)
+        raise SystemExit(
+            f"{key!r} is not a configured {ADAPTER_NAME} source — try {usable}"
+        )
+    return source
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
+    ap.add_argument("key", nargs="?", default="moh_sg",
+                    help="source key from config/sources.yaml (default: moh_sg)")
     ap.add_argument("--days", type=int, default=90, help="extra reporting window")
     ap.add_argument("--whole-page", action="store_true",
                     help="fetch all 7.5 MB instead of the byte range the poller uses")
     ap.add_argument("--json", type=Path, help="also write the parsed items here")
     args = ap.parse_args()
 
-    adapter = MohNewsroomAdapter()
+    source = load_source(args.key)
+    adapter = IsomerNewsroomAdapter()
     headers = None if args.whole_page else {"Range": f"bytes=0-{WINDOW_BYTES}"}
     try:
         with adapter:
-            response = adapter.get(SOURCE.url, SOURCE.key, headers=headers)
-            items = adapter.parse(response.content, SOURCE)
+            response = adapter.get(source.url, source.key, headers=headers)
+            items = adapter.parse(response.content, source)
     except FeedError as exc:
         print(exc, file=sys.stderr)
         return 1
@@ -64,7 +82,8 @@ def main() -> int:
     granted = "granted" if response.status_code == 206 else "not granted"
     asked = "not asked for" if args.whole_page else f"asked for {WINDOW_BYTES:,}, {granted}"
     print(f"HTTP {response.status_code} — {len(response.content):,} bytes ({asked})")
-    print(f"{len(items)} items, capped at {MAX_ITEMS}")
+    cap = source.max_items or MAX_ITEMS
+    print(f"{source.name} ({source.key}) — {len(items)} items, capped at {cap}")
 
     now = dt.datetime.now(dt.UTC)
     dated = [item for item in items if item.published]

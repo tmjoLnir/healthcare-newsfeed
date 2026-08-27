@@ -75,6 +75,32 @@ TOPICS: dict[str, tuple[float, tuple[str, ...]]] = {
         "malaria", "tuberculosis", "cholera", "measles", "ebola", "hiv",
         "immunis*", "immuniz*", "vaccination campaign", "refugee*",
     )),
+    # Drug and device safety. Added when HSA was configured and found to score
+    # 0.00 on titles like "Recall of Carbimazole 5 Tablet 5 mg" — maximally
+    # on-topic for this audience and invisible to every list above, because a
+    # recall names a product rather than a subject. Pharmacovigilance is
+    # squarely interview material too, so the gap was the scorer's rather than
+    # the source's. Sits under `policy` and over `treatment`: more clinically
+    # actionable than a trial readout, less central than health policy.
+    #
+    # Deliberately narrow, and narrower than the first draft. `topic_fit` adds
+    # 0.1 of breadth for every theme an item touches, so a list that matches
+    # loosely in a lede lifts every long-text source a little without saying
+    # anything true about them — "batch", "defect", "toxicity" and "poisoning"
+    # were dropped for exactly that. What is left is the vocabulary of a
+    # regulator's safety notice, which is what this scores.
+    #
+    # "advisory" was measured and dropped too, which is the useful record here:
+    # across a 428-item week it hit 4 items and only one was a safety advisory
+    # — the others were a Ministerial Advisory Group and an advisory committee.
+    # 25% precision is worse than not scoring the theme at all. "recall*" was
+    # kept on the same test: 6 of its 7 hits were product recalls, the seventh
+    # a doctor recalling an outbreak, and one bad hit in 428 is a fair price.
+    "safety": (0.80, (
+        "recall*", "safety alert*", "adverse event*", "adverse reaction*",
+        "side effect*", "contraindicat*", "counterfeit*", "falsified",
+        "adulterat*", "pharmacovigilance", "unregistered",
+    )),
     "treatment": (0.75, (
         "trial*", "phase 3", "phase 2", "treatment*", "therap*", "drug*",
         "vaccine*", "efficacy", "randomis*", "randomiz*", "approval", "breakthrough",

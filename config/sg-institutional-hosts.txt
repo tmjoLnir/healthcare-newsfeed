@@ -1,34 +1,33 @@
 # Singapore institutional hosts — measured 2026-08-27.
 #
-# All but three of these were opened on 2026-08-27 and swept. Results and the
-# reasoning are in docs/asia-sources.md, sixth sweep. Headline:
+# Opened and swept 2026-08-27; www.aic.sg followed in a second round. Results
+# and reasoning are in docs/asia-sources.md, sixth and seventh sweeps.
 #
-#     8 blocked, 3 challenge, 7 feed, 21 no feed
+#     22 no feed, 3 challenge, 7 feed, and NHG still outstanding
 #
-# Twenty-one serve real pages and publish no feed, which is what every
-# previously-measured Singapore institution did. The exception is HSA, which
-# publishes no feed either but ships a MOH-style Isomer Next index that
-# sources/moh.py parses unchanged — ~3.1 items/week of recalls and safety
-# advisories. That is the open recommendation.
+# Twenty-two serve real pages and publish no feed, which is what every
+# previously-measured Singapore institution did. HSA was the exception: no
+# feed either, but a MOH-style Isomer Next index that sources/isomer.py
+# parses unchanged. It is now a configured source in sources.yaml.
 #
 # Re-run the sweep at any time:
 #
 #     python tools/probe_feeds.py --file config/sg-institutional-hosts.txt
 #
 # ---------------------------------------------------------------------------
-# STILL TO OPEN — three hosts, and they replace five
+# STILL TO OPEN — one host, and it is the apex this time
 #
-#     www.aic.sg              missed in the 2026-08-27 opening; DNS resolves,
-#                             CONNECT still 403 on apex and www alike
-#     corp.nhg.com.sg         NHG has consolidated. www.nhg.com.sg redirects
-#     www.nhghealth.com.sg    here, and TTSH, KTPH, IMH and NCID are now paths
-#                             under nhghealth rather than sites of their own —
-#                             so these two hosts replace five rows below
+#     nhghealth.com.sg        NHG moved and the redirect moved with it:
+#                             corp.nhg.com.sg opened on 2026-08-27 but 301s to
+#                             the APEX nhghealth.com.sg, not to www. The `www`
+#                             rule from the fifth sweep is really "name the host
+#                             the redirect lands on" — here that is the apex.
 #
-# The `www` rule from the fifth sweep still holds for anything added later: an
-# allowlist entry has to name the host the redirect lands on, because a
-# redirect target is a separate CONNECT. That is exactly why the five NHG rows
-# below came back BLOCKED despite answering a 3xx.
+#     www.nhghealth.com.sg is open but answers 429 persistently, across probes
+#     forty minutes apart. verify_feeds.py and poll both class 429 as *blocked*
+#     rather than broken, which is the BMJ position: the host gating a shared
+#     egress address. It needs a slower probe from an unshared one before NHG
+#     can be called measured either way.
 #
 # RETIRE, not reopen:
 #     lkcmedicine.ntu.edu.sg  no DNS record at all, A or AAAA, while ntu.edu.sg
@@ -47,11 +46,14 @@
 www.singhealth.com.sg          # NO FEED
 www.nuhs.edu.sg                # NO FEED
 www.nhg.com.sg                 # BLOCKED → corp.nhg.com.sg
-corp.nhg.com.sg                # NOT YET OPEN — NHG's corporate site, the real
-                               # destination of www.nhg.com.sg
-www.nhghealth.com.sg           # NOT YET OPEN — one host now carries TTSH, KTPH,
+corp.nhg.com.sg                # OPEN, but 301s to the APEX nhghealth.com.sg,
+                               # which is not open — so it still buys nothing
+nhghealth.com.sg               # NOT YET OPEN — the apex, and the host the
+                               # corp.nhg.com.sg redirect actually lands on
+www.nhghealth.com.sg           # OPEN, but answers 429 persistently — blocked in
+                               # the BMJ sense, not broken. Carries TTSH, KTPH,
                                # IMH and NCID as paths, so it replaces four rows
-                               # below
+                               # below once it can actually be read
 
 # --- Hospitals and national specialty centres -------------------------------
 www.sgh.com.sg                 # NO FEED
@@ -69,10 +71,11 @@ www.ncid.sg                    # BLOCKED → www.nhghealth.com.sg/ncid
 # which is the register the digest's policy section wants. HSA in particular
 # is Singapore's drug and device regulator — the local counterpart to the FDA
 # and MHRA notices the digest already carries indirectly.
-www.hsa.gov.sg                 # NO FEED — but MOH-style index; SEE THE RECOMMENDATION
+www.hsa.gov.sg                 # CONFIGURED SOURCE — no feed, but a MOH-style
+                               # Isomer index; see sources.yaml and isomer.py
 www.hpb.gov.sg                 # NO FEED — MOH-style index, but 0.1/wk and 3 months stale
 www.healthhub.sg               # NO FEED — Sitecore
-www.aic.sg                     # STILL BLOCKED (403)
+www.aic.sg                     # NO FEED — opened in a second round and swept
 www.synapxe.sg                 # NO FEED
 www.smc.gov.sg                 # NO FEED — Isomer, but no article index
 www.gov.sg                     # NO FEED — Isomer; whole-of-government, not health

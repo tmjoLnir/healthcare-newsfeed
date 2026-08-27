@@ -17,7 +17,7 @@ from healthcare_newsfeed.models import Licence
 
 CONFIG = Path(__file__).resolve().parents[1] / "config"
 VALID_LICENCES = {"public_domain", "cc", "link_only"}
-VALID_ADAPTERS = {"rss", "who_odata", "moh_newsroom"}
+VALID_ADAPTERS = {"rss", "who_odata", "isomer_newsroom"}
 
 
 @pytest.fixture(scope="module")
@@ -99,8 +99,8 @@ def test_the_shipped_config_loads(tmp_path):
     """The loader and the files it reads have to agree, not just parse."""
     sources = load_sources(CONFIG / "sources.yaml")
 
-    assert len(sources) == 18
-    assert {s.adapter for s in sources} == {"rss", "who_odata", "moh_newsroom"}
+    assert len(sources) == 19
+    assert {s.adapter for s in sources} == {"rss", "who_odata", "isomer_newsroom"}
     assert next(s for s in sources if s.key == "nature_med").tolerate_failure
     assert next(s for s in sources if s.key == "who_news").licence is Licence.PUBLIC_DOMAIN
     assert next(s for s in sources if s.key == "statnews").paywalled
@@ -110,12 +110,21 @@ def test_the_shipped_config_loads(tmp_path):
     regional = {"annals_sg", "lancet_wpc", "lancet_sea"}
     assert regional <= {s.key for s in sources}
     assert all("global_health" in s.sections for s in sources if s.key in regional)
+
+    # The two Singapore agencies share one adapter and differ only by row, so
+    # the row is where a mistake would hide: a shared cap, or a licence wider
+    # than either agency's Terms of Use allow.
+    agencies = {s.key: s for s in sources if s.adapter == "isomer_newsroom"}
+    assert set(agencies) == {"moh_sg", "hsa_sg"}
+    assert all(s.licence is Licence.LINK_ONLY for s in agencies.values())
+    assert agencies["hsa_sg"].max_items == 12
+    assert agencies["moh_sg"].max_items is None
     assert next(s for s in sources if s.key == "annals_sg").licence is Licence.CC_REPUBLISHABLE
     assert "kesehatan" in next(s for s in sources if s.key == "conversation_id").url
 
     # MOH has no feed; it is the one source read out of a rendered page.
     moh = next(s for s in sources if s.key == "moh_sg")
-    assert (moh.adapter, moh.licence) == ("moh_newsroom", Licence.LINK_ONLY)
+    assert (moh.adapter, moh.licence) == ("isomer_newsroom", Licence.LINK_ONLY)
 
     template = load_digest_template(CONFIG / "digest.yaml")
     assert next(s["key"] for s in template["sections"]) == "story_of_week"
@@ -152,8 +161,26 @@ def test_documentation_only_fields_are_allowed(tmp_path):
     assert load_sources(path)[0].key == "bbc"
 
 
+def test_max_items_is_optional_and_defaults_to_the_adapters_own(tmp_path):
+    """Only the feedless listings need it, so absent means "adapter decides"."""
+    path = write(tmp_path, {"sources": [source_entry()]})
+
+    assert load_sources(path)[0].max_items is None
+
+
+def test_max_items_is_carried_through(tmp_path):
+    path = write(tmp_path, {"sources": [source_entry(max_items=12)]})
+
+    assert load_sources(path)[0].max_items == 12
+
+
 @pytest.mark.parametrize("entry,message", [
     ({"weigth": 1.0}, "unknown field"),
+    ({"max_items": 0}, "positive whole number"),
+    ({"max_items": -5}, "positive whole number"),
+    ({"max_items": "lots"}, "positive whole number"),
+    ({"max_items": 12.5}, "positive whole number"),
+    ({"max_items": True}, "positive whole number"),
     ({"weight": None}, "missing"),
     ({"licence": "made_up"}, "unknown licence"),
     ({"adapter": "carrier_pigeon"}, "not registered"),

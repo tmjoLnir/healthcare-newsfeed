@@ -23,7 +23,7 @@ from .sources import ADAPTERS
 SOURCE_FIELDS = frozenset({
     "key", "name", "url", "adapter", "licence", "weight", "sections",
     "paywalled", "poll_hours", "enabled", "tolerate_failure",
-    "retention_days", "notes",
+    "max_items", "retention_days", "notes",
 })
 
 REQUIRED_SOURCE_FIELDS = ("key", "name", "url", "weight", "sections")
@@ -93,6 +93,7 @@ def load_sources(path: Path) -> list[Source]:
             poll_hours=_poll_hours(merged.get("poll_hours", 24), key, path),
             enabled=True,
             tolerate_failure=bool(merged.get("tolerate_failure", False)),
+            max_items=_max_items(merged.get("max_items"), key, path),
         ))
 
     if not sources:
@@ -125,6 +126,18 @@ def _number(value: object, field: str, key: str, path: Path) -> float:
     if isinstance(value, bool) or not isinstance(value, int | float):
         raise ConfigError(f"{path}: source '{key}' has non-numeric {field} {value!r}")
     return float(value)
+
+
+def _max_items(value: object, key: str, path: Path) -> int | None:
+    """A per-poll record cap for feedless listings, or None for the default."""
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise ConfigError(
+            f"{path}: source '{key}' has max_items {value!r} — "
+            f"expected a positive whole number of records"
+        )
+    return value
 
 
 def _poll_hours(value: object, key: str, path: Path) -> int:
