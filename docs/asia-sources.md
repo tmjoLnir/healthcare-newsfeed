@@ -1021,13 +1021,42 @@ than left to sit.
 `www.aic.sg` was opened and measured: **no feed**, joining the twenty-two.
 
 NHG has moved again, and the redirect moved with it. `corp.nhg.com.sg` was
-opened and `301`s to the **apex** `nhghealth.com.sg` — not to `www` — which is
-not open. The fifth sweep's rule was "the allowlist entry has to name the `www`
-host"; the accurate form is **name the host the redirect lands on**, whichever
-it is. `www.nhghealth.com.sg` is open but answers `429` persistently, across
-probes forty minutes apart. `verify_feeds.py` and `poll` both class 429 as
-*blocked* rather than broken, which is the BMJ position — a host gating a
-shared egress address — so NHG is not measured either way yet.
+opened and `301`s to the **apex** `nhghealth.com.sg` — not to `www`. The fifth
+sweep's rule was "the allowlist entry has to name the `www` host"; the accurate
+form is **name the host the redirect lands on**, whichever it is.
+
+### NHG is closed, and the 429 was not what it looked like
+
+The apex was opened on request, so all three NHG hosts now reach the origin —
+and every one answers **429 on every path**, `/robots.txt` included. The first
+reading was that this is a rate limit and the BMJ position, a host gating a
+shared egress address. **That was wrong, and the headers say so plainly:**
+
+```
+HTTP/2 429
+server: Vercel
+x-vercel-mitigated: challenge
+x-vercel-challenge-token: 2.1787812844.60.…
+```
+
+The body is titled *"Vercel Security Checkpoint"*. NHG's new site is on Vercel,
+and Vercel answers its bot mitigation with a **429** — so this is a JavaScript
+challenge wearing a rate limit's status code. Nothing waits it out, and no
+allowlist entry touches it. It is the Duke-NUS mistake in a new costume: there
+a bot-check arrived as a `200` and was read as "a page with no feed", here one
+arrives as a `429` and reads as "try again later". **Status alone identifies
+neither. The body decides.**
+
+`tools/probe_feeds.py` now reads the body behind a 401/403/429 for exactly this
+reason, and reports NHG as `CHALLENGE` rather than `BLOCKED` — which matters
+because the two call for different actions, and only one of them is "ask for an
+allowlist entry".
+
+Verdict: **NHG cannot be polled from a datacenter address**, and nothing on the
+allowlist side is outstanding. Twelve hospitals and three clusters are behind
+it, so it is the largest single block of Singapore institutional coverage that
+stays shut — but it stays shut for the same reason BMJ does, not for one that
+can be asked away. Reopen only from a residential or proxied egress.
 
 ---
 

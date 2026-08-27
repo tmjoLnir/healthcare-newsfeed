@@ -8,13 +8,19 @@ those hosts arrive as domains rather than as feed URLs.
 
 Four verdicts, and the distinctions are the point:
 
-  BLOCKED    the egress path refused CONNECT, or the host answered 401/403/429.
-             A property of where this ran, not of the host — same split
-             verify_feeds.py draws for NEJM and BMJ.
-  CHALLENGE  a 2xx carrying a bot-check stub rather than a page. Recorded
-             separately because reading one as a real response is exactly how
-             the survey once concluded Duke-NUS had "no feed"; see
-             docs/asia-sources.md.
+  BLOCKED    the egress path refused CONNECT, or the host gated us with
+             401/403/429 and no bot-check behind it. A property of where this
+             ran, not of the host — the same split verify_feeds.py draws for
+             NEJM and BMJ. The action is to get the host allowlisted.
+  CHALLENGE  a bot-check page rather than a real response, **whatever status
+             it arrived with**. No allowlist entry fixes one, so it is a
+             different verdict and a different action.
+
+             Both halves of that were learned the hard way. Duke-NUS was a
+             challenge served with a 200 and read as "a page with no feed";
+             NHG is a challenge served with a 429 and read as "rate-limited,
+             try later" — Vercel answers its bot mitigation that way. Status
+             alone identifies neither, so the body decides.
   NO FEED    the host served real pages, and neither autodiscovery nor any
              candidate path produced a parseable feed.
   <URL>      a feed, with its item count, newest date and robots verdict.
@@ -70,6 +76,7 @@ CHALLENGE_MARKERS = (
     "_incapsula_resource", "incapsula incident", "cf-browser-verification",
     "challenge-platform", "/cdn-cgi/challenge", "just a moment...",
     "enable javascript and cookies to continue", "attention required!",
+    "vercel security checkpoint", "x-vercel-challenge",
 )
 
 _LINK_TAG = re.compile(r"<link\b[^>]*>", re.IGNORECASE)
@@ -79,7 +86,15 @@ _HREF = re.compile(r'href\s*=\s*["\']([^"\']+)["\']', re.IGNORECASE)
 
 
 class Blocked(Exception):
-    """CONNECT refused, or the host gated on our address."""
+    """CONNECT refused, or the host gated on our address.
+
+    Carries the response body when there was one, because a gating status is
+    not on its own evidence of what did the gating — see `is_challenge`.
+    """
+
+    def __init__(self, reason: str, body: bytes = b"") -> None:
+        super().__init__(reason)
+        self.body = body
 
 
 def fetch(url: str) -> tuple[int, bytes, str]:
@@ -94,9 +109,14 @@ def fetch(url: str) -> tuple[int, bytes, str]:
         with urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx) as r:
             return r.status, r.read(), r.url
     except urllib.error.HTTPError as e:
+        # Read the body even when gating: a bot-check is routinely served with
+        # a gating status, and the body is the only thing that says which it
+        # is. Vercel answers its challenge with 429, which reads as a rate
+        # limit — and "wait and retry" is exactly the wrong response to it.
+        body = e.read()[:8192]
         if e.code in BLOCKED_CODES:
-            raise Blocked(f"HTTP {e.code}") from e
-        return e.code, e.read()[:4096], url
+            raise Blocked(f"HTTP {e.code}", body) from e
+        return e.code, body, url
     except urllib.error.URLError as e:
         # A proxy that refuses CONNECT surfaces here, not as an HTTPError.
         raise Blocked(str(getattr(e, "reason", e))[:120]) from e
@@ -170,7 +190,14 @@ def probe(host: str) -> dict:
     try:
         status, body, final = fetch(f"https://{host}/")
     except Blocked as e:
-        result.update(verdict="BLOCKED", detail=str(e))
+        if is_challenge(e.body):
+            # Gated, but by a bot-check rather than by address. Reported as
+            # CHALLENGE because the actions differ: an allowlist entry fixes
+            # BLOCKED and does nothing at all for this.
+            result.update(verdict="CHALLENGE",
+                          detail=f"{e} — bot-check, not a rate limit")
+        else:
+            result.update(verdict="BLOCKED", detail=str(e))
         return result
 
     # A bot-check stub is not a page, so there is nothing to autodiscover from

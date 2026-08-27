@@ -151,16 +151,17 @@ Judgement calls rather than gaps.
       this as *blocked* rather than *failed*, so it costs nothing else. `poll`'s
       summary line is where to notice it — a source blocked every day is a
       source that is not in the digest, and nothing else will say so.
-- [ ] **Two NHG hosts, and a rate limit.** `www.aic.sg` was opened and swept —
-      no feed, like the other twenty-one. NHG is the one still outstanding, and
-      it moved: `corp.nhg.com.sg` opened but `301`s to the **apex**
-      `nhghealth.com.sg`, which is not open, and `www.nhghealth.com.sg` answers
-      `429` persistently, which `poll` and `verify_feeds.py` both class as
-      *blocked* rather than broken — the position BMJ is in. So the ask is
-      `nhghealth.com.sg` (the apex this time, not the `www`), and the 429 needs
-      a slower probe from an unshared address before NHG can be called measured.
-      All annotated in
-      [`config/sg-institutional-hosts.txt`](../config/sg-institutional-hosts.txt).
+- [ ] **NHG needs a non-datacenter egress, not an allowlist entry.** The apex
+      `nhghealth.com.sg` was opened on 2026-08-27 and all three NHG hosts now
+      reach the origin — and every one answers 429 on every path, `/robots.txt`
+      included. That 429 is **Vercel bot mitigation, not a rate limit**
+      (`x-vercel-mitigated: challenge`, body titled "Vercel Security
+      Checkpoint"), so nothing waits it out and no allowlist change touches it.
+      Twelve hospitals and three clusters sit behind it, which makes it the
+      largest block of Singapore institutional coverage still shut — shut the
+      way BMJ is, and it would open from the same residential or proxied egress
+      the NEJM/Annals item above needs. **Nothing is outstanding on the
+      allowlist side.**
 
 ---
 
@@ -207,6 +208,7 @@ Dated decisions, newest first. Each links to where the reasoning lives.
 
 | Date | Decision |
 |---|---|
+| 2026-08-27 | **NHG closed, and a 429 corrected.** The apex `nhghealth.com.sg` was opened, so all three NHG hosts reach the origin — and all answer 429 on every path including `/robots.txt`. That is not a rate limit: `x-vercel-mitigated: challenge` and a body titled "Vercel Security Checkpoint" make it a JavaScript bot-check wearing a rate limit's status code. The Duke-NUS mistake in a new costume — there a bot-check arrived as a 200 and was read as "no feed", here as a 429 read as "try later" — so `tools/probe_feeds.py` now reads the body behind a 401/403/429 and reports CHALLENGE rather than BLOCKED, because only one of those means "ask for an allowlist entry". NHG needs a residential egress, the same one NEJM and Annals need — [asia-sources.md, seventh sweep](asia-sources.md) |
 | 2026-08-27 | **HSA added, and the MOH adapter generalised.** `sources/moh.py` became `sources/isomer.py`: the item base and the slug prefix now come from each source's own `url`, so the two agencies share one parser and a third needs only a row. Two things the addition turned up. `max_items` is now per source, because 40 records is three weeks of MOH but ninety days of HSA, and `window()` selects on when an item was *stored* — HSA polls 12. And `score.py` gained a `safety` theme, because HSA scored **0.00** on titles like "Recall of Carbimazole 5 Tablet 5 mg": a recall names a product rather than a subject, so every existing theme missed it. The theme was measured at 428 items and trimmed twice — "advisory" hit 4 items and only one was a safety advisory — and it leaves the built issue byte-identical while lifting HSA's best item from 148th to 71st. HSA still published nothing this week — [asia-sources.md](asia-sources.md) |
 | 2026-08-27 | **Korea Biomedical Review rejected**, closing the last candidate on the regional survey. Not a quality call — the feed parses unchanged and its register (pediatric palliative care gaps, vaccination policy, health-system reform) is what the digest wants. A fit call: it is Korea, the audience is Singaporean, and ~175 items a week would roughly double the store's intake for a country this audience has no particular stake in. Row kept disabled in `candidates-asia.yaml` as the record — [asia-sources.md, fifth sweep](asia-sources.md) |
 | 2026-08-27 | **Singapore institutional hosts opened and swept** — 8 blocked, 3 challenge, 7 feed, 21 no feed. The prior held (no Singapore institution publishes a feed) but stopped at the wrong question: **HSA ships the same Isomer Next index MOH does, and `sources/moh.py` parses it unchanged** — ~3.1 items/week of recalls and safety advisories, and the second source of Singapore-specific health news the set could have. HPB is the same platform but 0.1/week and three months stale; SMC is Isomer with no article index. Also found: NHG has consolidated TTSH, KTPH, IMH and NCID onto one host, so two hosts replace five; `lkcmedicine.ntu.edu.sg` has no DNS record, which explains its long-standing 502; and `www.smj.org.sg` is refused by the host rather than the policy — [asia-sources.md, sixth sweep](asia-sources.md) |

@@ -3,7 +3,7 @@
 # Opened and swept 2026-08-27; www.aic.sg followed in a second round. Results
 # and reasoning are in docs/asia-sources.md, sixth and seventh sweeps.
 #
-#     22 no feed, 3 challenge, 7 feed, and NHG still outstanding
+#     22 no feed, 6 challenge, 7 feed — and NHG shut by a bot-check
 #
 # Twenty-two serve real pages and publish no feed, which is what every
 # previously-measured Singapore institution did. HSA was the exception: no
@@ -15,19 +15,24 @@
 #     python tools/probe_feeds.py --file config/sg-institutional-hosts.txt
 #
 # ---------------------------------------------------------------------------
-# STILL TO OPEN — one host, and it is the apex this time
+# NOTHING LEFT TO OPEN. Every host below reaches its origin.
 #
-#     nhghealth.com.sg        NHG moved and the redirect moved with it:
-#                             corp.nhg.com.sg opened on 2026-08-27 but 301s to
-#                             the APEX nhghealth.com.sg, not to www. The `www`
-#                             rule from the fifth sweep is really "name the host
-#                             the redirect lands on" — here that is the apex.
+# NHG is the one still uncovered, and no allowlist entry fixes it. All three
+# hosts — corp.nhg.com.sg, nhghealth.com.sg and www.nhghealth.com.sg — answer
+# 429 on every path, /robots.txt included, and that 429 is Vercel bot
+# mitigation rather than a rate limit:
 #
-#     www.nhghealth.com.sg is open but answers 429 persistently, across probes
-#     forty minutes apart. verify_feeds.py and poll both class 429 as *blocked*
-#     rather than broken, which is the BMJ position: the host gating a shared
-#     egress address. It needs a slower probe from an unshared one before NHG
-#     can be called measured either way.
+#     server: Vercel
+#     x-vercel-mitigated: challenge      <- body titled "Vercel Security Checkpoint"
+#
+# So it does not wait out and it does not open. Twelve hospitals and three
+# clusters are behind it, which makes it the largest block of Singapore
+# institutional coverage still shut — shut the way BMJ is. It would open from
+# a residential or proxied egress, the same one NEJM and annals_sg need.
+#
+# The apex/www rule from the fifth sweep still applies to anything added later,
+# and its accurate form is: name the host the redirect LANDS on, whichever it
+# is. corp.nhg.com.sg 301s to the apex, not to www.
 #
 # RETIRE, not reopen:
 #     lkcmedicine.ntu.edu.sg  no DNS record at all, A or AAAA, while ntu.edu.sg
@@ -46,14 +51,11 @@
 www.singhealth.com.sg          # NO FEED
 www.nuhs.edu.sg                # NO FEED
 www.nhg.com.sg                 # BLOCKED → corp.nhg.com.sg
-corp.nhg.com.sg                # OPEN, but 301s to the APEX nhghealth.com.sg,
-                               # which is not open — so it still buys nothing
-nhghealth.com.sg               # NOT YET OPEN — the apex, and the host the
-                               # corp.nhg.com.sg redirect actually lands on
-www.nhghealth.com.sg           # OPEN, but answers 429 persistently — blocked in
-                               # the BMJ sense, not broken. Carries TTSH, KTPH,
-                               # IMH and NCID as paths, so it replaces four rows
-                               # below once it can actually be read
+corp.nhg.com.sg                # CHALLENGE — 301s to the apex, which challenges
+nhghealth.com.sg               # CHALLENGE — Vercel bot-check served as 429
+www.nhghealth.com.sg           # CHALLENGE — same Vercel bot-check. Carries TTSH,
+                               # KTPH, IMH and NCID as paths, so all four are
+                               # shut behind this one host
 
 # --- Hospitals and national specialty centres -------------------------------
 www.sgh.com.sg                 # NO FEED
