@@ -122,7 +122,13 @@ def test_poll_stores_what_the_adapter_returns(adapter, config, db, capsys):
 
     assert "1/1 sources polled, 2 new items" in capsys.readouterr().out
     with Store(db) as store:
-        stored = store.window(NOW - dt.timedelta(days=1), NOW + dt.timedelta(days=1))
+        # window() selects on first_seen, which poll stamps from the wall clock
+        # — so this window has to come from the wall clock too. Measuring it
+        # against the frozen NOW above made the test pass only until the real
+        # date drifted past it.
+        real_now = dt.datetime.now(dt.UTC)
+        stored = store.window(real_now - dt.timedelta(days=1),
+                              real_now + dt.timedelta(days=1))
     assert sorted(i.title for i in stored) == ["bbc a", "bbc b"]
 
 
