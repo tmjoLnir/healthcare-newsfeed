@@ -411,6 +411,87 @@ policy still refused it. **An allowlist entry has to name the `www` host.**
 
 ---
 
+## Fourth sweep — 2026-08-27, every other route into CNA
+
+The third sweep rejected CNA's seven general feeds. This one asks the follow-up
+question: **is there any other way to get CNA health news?** Seven routes were
+tried. None works, and the reason turns out to sit upstream of delivery.
+
+### What `robots.txt` discloses
+
+`https://www.channelnewsasia.com/robots.txt` is the useful find, and it was not
+read in the earlier sweeps. It carries `Crawl-delay: 10`, a blanket
+`Disallow: /api/*`, and then four explicit exceptions:
+
+```
+Allow: /api/v1/google-news-feed
+Allow: /api/v1/sitemap-news-feed
+Allow: /api/v1/sitemap-video-feed
+Allow: /api/v1/sitemap-image-feed
+```
+
+Worth noting against the third sweep's verdict: `/api/v1/rss-outbound-feed` —
+the endpoint behind all seven feeds on CNA's own `/rss` page — falls under
+`Disallow: /api/*` and is *not* one of the exceptions. CNA publishes those feeds
+for readers while disallowing them to crawlers. It does not change the rejection
+(the feeds carry no health content either way), but a poller is a crawler, and
+that is the more defensible reading.
+
+### The routes, and why each fails
+
+| Route | Result |
+|---|---|
+| `/api/v1/google-news-feed` | **Live, robots-allowed, and full article text** — Atom, 50 entries, median 2,472 characters of body. But it is site-wide "Latest News" with no category parameter, and its window is **9.3 hours** against ~129 items/day. A daily poll would capture 50 of ~129 and miss the rest. Today's 50: 21 sport, 13 business, 7 world, 0 health |
+| `/api/v1/sitemap-news-feed` | The same 50 items in sitemap form, same 9.3-hour window. Adds `news:keywords`, but only on 18 of 50 |
+| Scraping `/mental-health`, `/news/healthmatters`, `/topic/wellness` | **No dates at all** — no `datetime` attribute, no visible date, nothing to set `published` from. And they are evergreen hubs, not news streams: median node id ~3.0M on `/mental-health` against 6.26M–6.34M for articles published today, with `/news/healthmatters` topping out at 4.13M. Padded with `/advertorial/`, `/watch/`, `/listen/` and `/podcasts/` |
+| Drupal JSON:API (`/jsonapi`) | 403, and `Disallow: /jsonapi/*` |
+| Per-topic feeds (`/topic/wellness/rss`, `/mental-health/rss`) | 404 |
+| `cnalifestyle.channelnewsasia.com` | Refused at CONNECT — a separate host from the allowlisted `www`, the apex/`www` trap again. Lifestyle content, so low value even if opened |
+| Google News, `site:channelnewsasia.com` | See below — the closest thing to a route, and still no |
+
+### Google News, scoped to CNA
+
+One thing here is genuinely new and corrects the second sweep's note. Adding
+**`when:7d`** to the query fixes the staleness that made the plain `site:` query
+useless — without it the 100 results span 2020-09-05 to 2026-08-26 (a 2,181-day
+window, ranked by relevance rather than date); with it, 100 items across 6 days.
+
+It still fails, for two reasons:
+
+1. **68 of the 100 are not journalism.** CNA938 radio segments dominate — "The
+   Wellness Hour", "Mind Your Money" — alongside features about *Mediacorp's TV
+   drama hospital set*. Of the 32 that remain, several are duplicates of one wire
+   story (two on a Pakistan hospital fire, three on Imran Khan's hospital
+   transfer).
+2. **There is no publisher URL anywhere in the feed.** `<link>` and `<guid>` are
+   opaque `CBMi…` ids that no longer decode; `<description>`'s anchor points at
+   the same redirect; `<source url>` gives only `https://www.channelnewsasia.com`,
+   the home page. Following the redirect returns HTTP 200 still on
+   `news.google.com` — a Google interstitial, not a hop to CNA. The store's
+   identity is the canonical URL, so this is fatal rather than inconvenient.
+
+### The conclusion is upstream of delivery
+
+Only one route is even technically viable — poll `google-news-feed` about four
+times a day to cover its 9.3-hour window, and filter it for health. That would
+cost a new adapter, a per-source poll cadence (`poll_hours: 6`, which
+`sources.yaml` already supports) plus the workflow schedule to match, ~129 items
+a day of ingest, and a keyword filter at the source, which cuts against
+`score.py`'s "ranking, not filtering".
+
+It is not worth building, and the reason is not the plumbing. CNA barely
+produces the thing this digest wants. The Singapore feed carried 1 health item
+in 20 and it was a malpractice court report; the site-wide feed carried 0 in 50;
+today's news sitemap had exactly one article tagged with a health keyword and it
+was *"What happens to men's skin after 35?"*; and the bulk of what a health
+query does surface is radio programming. The third sweep already measured the
+consequence end to end — CNA at weight 0.8 changed the built issue not at all.
+
+**No further CNA route is worth trying.** Reopen this only if CNA ships a
+health-section feed, which would show up on `/rss` and in `robots.txt`.
+
+---
+
 ## Recommendation
 
 1. ~~Add `lancet_wpc` and `lancet_sea`~~ — **done.** Both in `sources.yaml` at
@@ -420,12 +501,15 @@ policy still refused it. **An allowlist entry has to name the `www` host.**
 3. ~~Add `annals_sg`~~ — **done**, after the second sweep. Weight 1.0, `cc`.
 4. ~~Build the MOH adapter~~ — **done.** `sources/moh.py`, ~11 items a week
    overall and ~1.5 of the steady kind, `link_only`, newest 40 records a poll.
-5. ~~Get `www.channelnewsasia.com` opened~~ — **done, and CNA is rejected.**
-   Measured in the third sweep: CNA publishes no health feed at any path, and
-   its Singapore and Asia general feeds carry 1 health item in 40 and rank no
-   higher than 146th of 431 candidates. The rows stay in
-   `candidates-asia.yaml`, disabled, as the record. Revisit only if CNA ever
-   publishes a feed for `/mental-health` or `/news/healthmatters`.
+5. ~~Get `www.channelnewsasia.com` opened~~ — **done, and CNA is closed.**
+   The third sweep measured its feeds: no health feed at any path, 1 health item
+   in 40, no higher than 146th of 431 candidates. The fourth sweep then tried
+   every other delivery route — the robots-allowed `google-news-feed` and news
+   sitemap, scraping the health sections, Drupal JSON:API, per-topic feeds, the
+   `cnalifestyle` subdomain, and Google News scoped with `when:7d` — and none
+   works. The rows stay in `candidates-asia.yaml`, disabled, as the record.
+   Reopen only if CNA ships a health-section feed, which would appear on `/rss`
+   and in `robots.txt`.
 6. **Get `www.koreabiomed.com` opened** — the `www` host specifically; the apex
    alone only `301`s to it, which the policy still refuses. This is the last
    unmeasured candidate on the survey.
