@@ -166,10 +166,13 @@ format.
 
 Two rules the adapter and store divide between them:
 
-- **`RawItem` is the item as found.** The adapter strips markup and normalises
-  dates, and nothing else — tracking parameters included. Ranking and licence
-  limits happen later, so an adapter that filtered would remove evidence the
-  pipeline needs.
+- **`RawItem` is the item as found.** The adapter strips markup and generator
+  boilerplate, normalises dates, and nothing else — tracking parameters
+  included. Ranking and licence limits happen later, so an adapter that
+  filtered would remove evidence the pipeline needs. "Generator boilerplate"
+  is a narrow exception and stays narrow: WordPress's `The post … appeared
+  first on …` is the feed software talking, not the publisher, and it is
+  dropped for the same reason markup is. Nothing that carries meaning goes.
 - **The store's identity is the canonical URL.** Inserts are append-only: a
   re-poll never rewrites `first_seen`, or the item captured on Monday would slide
   into next week's issue.
@@ -180,6 +183,8 @@ Two rules the adapter and store divide between them:
 config/
   sources.yaml        18 sources: weights, sections, licences, retention data
   digest.yaml         section order, headings, per-section quotas
+  candidates-asia.yaml        the Asia survey, re-runnable in one command
+  sg-institutional-hosts.txt  Singapore hosts still awaiting an egress allowlist
 src/healthcare_newsfeed/
   models.py           Source, RawItem, Item, Section, Digest, Licence
   config.py           YAML loading and validation
@@ -190,7 +195,8 @@ src/healthcare_newsfeed/
   telegram.py         Bot API client — sendMessage, retries, redaction
   cli.py              poll · build · publish · verify
 tools/
-  verify_feeds.py     feed health checker
+  verify_feeds.py     feed health checker — is this known feed healthy?
+  probe_feeds.py      feed discovery — given a hostname, is there one at all?
   store_sync.sh       carry the store between runs via a Release asset
 tests/                offline, fixture-driven
 ```

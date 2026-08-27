@@ -17,9 +17,14 @@
 # Third sweep, 2026-08-26: www.channelnewsasia.com was opened and CNA was
 # measured at last — and REJECTED. It publishes no health feed at any path, and
 # its general feeds carry 1 health item in 40. Rows moved down to the rejected
-# block. www.koreabiomed.com is still blocked and is now the only unmeasured
-# candidate left; note the allowlist entry has to name the www host, since the
-# apex only 301s to it.
+# block.
+#
+# Fifth sweep, 2026-08-27: www.koreabiomed.com opened and was measured, so
+# NOTHING ON THIS SURVEY IS UNMEASURED ANY MORE. It measured well and was
+# REJECTED anyway, on fit — see its row. The sweep
+# also re-probed every Singapore host: 31 institutional ones are still refused
+# at CONNECT and have never been measured, and Duke-NUS turned out to be
+# Incapsula-blocked rather than feed-less. Full write-up in docs/asia-sources.md.
 
 defaults:
   adapter: rss
@@ -98,9 +103,12 @@ sources:
     weight: 0.5
     sections: [also_reading]
     notes: >
-      Host is reachable again — the Imperva block noted in the README has
-      lifted — but no feed exists. /feed, /allnews/rss and /newshub/rss all
-      return HTML with a 200; /rss.xml and /sitemap.xml 404.
+      STILL BLOCKED, corrected 2026-08-27. The earlier note here — that the
+      Imperva block had lifted and no feed exists — read a challenge page as a
+      real response. Every path returns a 212-byte Incapsula stub: /allnews/rss
+      and /newshub/rss with a 200, /feed and /rss.xml with a 404. Whether a feed
+      exists is unknown, not answered. Re-test by checking the body, not the
+      status.
 
   - key: nus_medicine
     name: NUS Yong Loo Lin School of Medicine
@@ -237,18 +245,40 @@ sources:
   # --- UNVERIFIED: blocked by this session's egress policy, not by the host
   # Enabled so a sweep from an unblocked network actually tests them. Expect
   # this whole block to fail when run from inside a restricted environment.
+  # (koreabiomed leads it for continuity, but is measured and disabled as of
+  # the fifth sweep — every other row here is still untested.)
 
   - key: koreabiomed
     name: Korea Biomedical Review
     url: https://www.koreabiomed.com/rss/allArticle.xml
+    enabled: false
     weight: 0.8
     sections: [also_reading, policy]
     notes: >
-      UNVERIFIED still. The apex koreabiomed.com was opened in the second
-      sweep but 301s to www.koreabiomed.com, which was not — so every feed
-      path under it still fails at CONNECT. Needs the www host opened too;
-      re-confirmed blocked in the third sweep, and now the only candidate on
-      this survey that has never been measured.
+      MEASURED AND REJECTED 2026-08-27. www.koreabiomed.com is open at last, and
+      the apex now redirects into it cleanly, so the survey's last unmeasured
+      candidate finally has an answer.
+
+      The feed is good: 50 items, RSS 2.0, parses through sources/rss.py
+      unchanged, English throughout, ~300-character summaries, newest same-day,
+      and robots.txt disallows only /admin/. The register is better than
+      Healthcare Asia's and closer to what this digest wants — only 3 of 50
+      headlines are market or deal news, and the window carries pediatric
+      palliative care missing from 10 of Korea's 16 regions, free flu
+      vaccination widened to age 14, and a health minister's reform agenda.
+
+      REJECTED 2026-08-27, on fit rather than on anything wrong with the feed.
+      It is Korea and the audience is Singaporean — a weaker case than the
+      regional Lancet titles already configured, which cover South-East Asia
+      and the Western Pacific as a region rather than one other country. And 50
+      items across a 2-day window is ~175 a week, which would roughly double
+      the store's weekly intake on its own, for a country this audience has no
+      particular stake in.
+
+      Nothing here needs fixing to make it work: it parses today and would ship
+      tomorrow if the audience were different. Kept disabled as the record, the
+      same as CNA and the Straits Times, so no later sweep re-litigates it.
+      Reopen only if the digest ever wants a wider East Asia desk.
 
   - key: healthcareasia
     name: Healthcare Asia Magazine

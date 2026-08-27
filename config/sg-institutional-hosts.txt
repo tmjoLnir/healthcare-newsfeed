@@ -1,0 +1,121 @@
+# Singapore institutional hosts — measured 2026-08-27.
+#
+# All but three of these were opened on 2026-08-27 and swept. Results and the
+# reasoning are in docs/asia-sources.md, sixth sweep. Headline:
+#
+#     8 blocked, 3 challenge, 7 feed, 21 no feed
+#
+# Twenty-one serve real pages and publish no feed, which is what every
+# previously-measured Singapore institution did. The exception is HSA, which
+# publishes no feed either but ships a MOH-style Isomer Next index that
+# sources/moh.py parses unchanged — ~3.1 items/week of recalls and safety
+# advisories. That is the open recommendation.
+#
+# Re-run the sweep at any time:
+#
+#     python tools/probe_feeds.py --file config/sg-institutional-hosts.txt
+#
+# ---------------------------------------------------------------------------
+# STILL TO OPEN — three hosts, and they replace five
+#
+#     www.aic.sg              missed in the 2026-08-27 opening; DNS resolves,
+#                             CONNECT still 403 on apex and www alike
+#     corp.nhg.com.sg         NHG has consolidated. www.nhg.com.sg redirects
+#     www.nhghealth.com.sg    here, and TTSH, KTPH, IMH and NCID are now paths
+#                             under nhghealth rather than sites of their own —
+#                             so these two hosts replace five rows below
+#
+# The `www` rule from the fifth sweep still holds for anything added later: an
+# allowlist entry has to name the host the redirect lands on, because a
+# redirect target is a separate CONNECT. That is exactly why the five NHG rows
+# below came back BLOCKED despite answering a 3xx.
+#
+# RETIRE, not reopen:
+#     lkcmedicine.ntu.edu.sg  no DNS record at all, A or AAAA, while ntu.edu.sg
+#                             resolves — which is what the long-standing
+#                             "gateway 502" always was. School is now at
+#                             www.ntu.edu.sg/medicine
+#     www.smj.org.sg          the HOST refuses us, not the policy: CONNECT
+#                             succeeds and the origin resets TLS after Client
+#                             Hello; plain HTTP answers 403. Same position as
+#                             BMJ. No allowlist change fixes this
+# ---------------------------------------------------------------------------
+
+# --- Clusters ---------------------------------------------------------------
+# Singapore's public healthcare is three clusters. Their newsrooms are the
+# most likely institutional source of real clinical and service news.
+www.singhealth.com.sg          # NO FEED
+www.nuhs.edu.sg                # NO FEED
+www.nhg.com.sg                 # BLOCKED → corp.nhg.com.sg
+corp.nhg.com.sg                # NOT YET OPEN — NHG's corporate site, the real
+                               # destination of www.nhg.com.sg
+www.nhghealth.com.sg           # NOT YET OPEN — one host now carries TTSH, KTPH,
+                               # IMH and NCID as paths, so it replaces four rows
+                               # below
+
+# --- Hospitals and national specialty centres -------------------------------
+www.sgh.com.sg                 # NO FEED
+www.ttsh.com.sg                # BLOCKED → www.nhghealth.com.sg/ttsh
+www.ktph.com.sg                # BLOCKED → www.nhghealth.com.sg/ktph
+www.cgh.com.sg                 # NO FEED
+www.kkh.com.sg                 # NO FEED
+www.nccs.com.sg                # NO FEED
+www.nhcs.com.sg                # NO FEED
+www.imh.com.sg                 # BLOCKED → www.nhghealth.com.sg/imh
+www.ncid.sg                    # BLOCKED → www.nhghealth.com.sg/ncid
+
+# --- Agencies and statutory boards ------------------------------------------
+# The highest-value group: these publish policy, safety alerts and recalls,
+# which is the register the digest's policy section wants. HSA in particular
+# is Singapore's drug and device regulator — the local counterpart to the FDA
+# and MHRA notices the digest already carries indirectly.
+www.hsa.gov.sg                 # NO FEED — but MOH-style index; SEE THE RECOMMENDATION
+www.hpb.gov.sg                 # NO FEED — MOH-style index, but 0.1/wk and 3 months stale
+www.healthhub.sg               # NO FEED — Sitecore
+www.aic.sg                     # STILL BLOCKED (403)
+www.synapxe.sg                 # NO FEED
+www.smc.gov.sg                 # NO FEED — Isomer, but no article index
+www.gov.sg                     # NO FEED — Isomer; whole-of-government, not health
+data.gov.sg                    # NO FEED. Note the Singapore Open Data Licence
+                               # covers Datasets, which is why MOH's site
+                               # contents are link_only but its data is not
+
+# --- Professional bodies and journals ---------------------------------------
+www.sma.org.sg                 # NO FEED
+www.smj.org.sg                 # HOST REFUSES US, not the policy — CONNECT now
+                               # succeeds and the origin resets TLS after Client
+                               # Hello; plain HTTP answers 403. Retire.
+
+# --- Universities and research ----------------------------------------------
+# news.nus.edu.sg is already reachable and was rejected in the second sweep as
+# university-wide PR, so treat this group as low prior.
+www.a-star.edu.sg              # NO FEED
+www.nus.edu.sg                 # CHALLENGE — Incapsula stub
+www.ntu.edu.sg                 # NO FEED
+lkcmedicine.ntu.edu.sg         # NO DNS RECORD, A or AAAA, while ntu.edu.sg
+                               # resolves — which is what the long-standing
+                               # "gateway 502" always was. Retire; the school is
+                               # at www.ntu.edu.sg/medicine now.
+
+# --- Singapore consumer health and media ------------------------------------
+# Lower prior: the Straits Times, CNA and NUS Newsroom all failed the same way,
+# and Medical Channel Asia was rejected as consumer wellness. Included so the
+# sweep is complete rather than because any is expected to earn a row.
+www.healthxchange.sg           # NO FEED
+www.asianscientist.com         # FEED /feed/ 30 items — science-wide, not health
+www.todayonline.com            # NO FEED — now a CNA section; closed by the CNA rejection
+www.businesstimes.com.sg       # FEED /rss.xml 100 items — business, paywalled
+mothership.sg                  # FEED /feed/ 10 items — general consumer news
+www.asiaone.com                # NO FEED
+
+# --- Already reachable, no allowlist change needed ---------------------------
+# Listed so a sweep covers them too, and so nobody asks for them twice.
+# Duke-NUS and NUS Medicine are reachable but Incapsula-blocked, which is a
+# different problem from a CONNECT refusal and is not fixed by an allowlist.
+annals.edu.sg                  # configured source
+www.moh.gov.sg                 # configured source
+news.nus.edu.sg                # measured, rejected — university-wide PR
+medicalchannelasia.com         # measured, rejected — consumer wellness
+healthcareasiamagazine.com     # measured, rejected — investor trade press
+www.duke-nus.edu.sg            # Incapsula challenge stub on every path
+medicine.nus.edu.sg            # WordPress, feeds disabled (genuine wp_die 500)
