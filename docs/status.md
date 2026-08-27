@@ -91,12 +91,15 @@ Documented so they are not retried in good faith:
 | **Medscape** | Cloudflare bot challenge |
 | **NUS Medicine** | WordPress with feeds disabled — 500, `{"code":"wp_die","message":"No feed available."}` |
 | **Duke-NUS** | Behind Incapsula on every path — every response is a 212-byte challenge stub, some with a 200. The 2026-08-25 note that the block had lifted was that stub being read as a page; corrected 2026-08-27. Whether a feed exists is unknown |
-| **LKC Medicine NTU** | Gateway 502 |
+| **LKC Medicine NTU** | The hostname has no DNS record at all — neither A nor AAAA — while `ntu.edu.sg` resolves normally. That is what the "gateway 502" carried since the first sweep always was. The school is at `www.ntu.edu.sg/medicine` now; retire the host |
+| **Singapore Medical Journal** | `www.smj.org.sg` resets the TLS connection after Client Hello and answers plain HTTP with 403 — a datacenter-address block, the position BMJ is in. Reachable through the egress policy since 2026-08-27, and still refused by the host |
 
-No Singapore *institution* has yielded a feed — three schools, three failure
-modes, and Duke-NUS's is a block rather than an answer. Thirty-one further
-Singapore institutional hosts have never been reachable from any sweep at all;
-they are listed in [asia-sources.md](asia-sources.md). MOH is the exception, and
+No Singapore *institution* publishes a feed. That is now measured rather than
+assumed: 32 institutional hosts were opened and swept on 2026-08-27, and 21
+serve real pages with no feed at any path — none of the three clusters, none of
+the twelve hospitals and specialty centres, none of the agencies. But HSA
+publishes a MOH-style index instead, which `sources/moh.py` already knows how to
+read; see [Open items](#open-items). MOH is the exception, and
 it is a configured source: it publishes no feed either, but `sources/moh.py`
 reads its newsroom index out of the rendered
 page ([design.md](design.md#sources-that-need-special-handling)).
@@ -151,19 +154,26 @@ Judgement calls rather than gaps.
       promoted on the spot: it is Korea rather than Singapore, and at ~175 items
       a week it would roughly double the store's intake. A content call, not a
       technical one — [asia-sources.md, fifth sweep](asia-sources.md).
-- [ ] **Get the Singapore institutional hosts opened, then sweep them.** 32 are
-      still refused at CONNECT and have never been measured — the three
-      clusters, the hospitals, HSA, HPB, HealthHub, SMC, SMA, SMJ, A\*STAR,
-      `data.gov.sg`. The ask and the sweep input are one file,
-      [`config/sg-institutional-hosts.txt`](../config/sg-institutional-hosts.txt);
-      measure them with `python tools/probe_feeds.py --file
-      config/sg-institutional-hosts.txt` once they are open. **The allowlist
-      entry has to name the `www` host** — ten of these apexes are already
-      allowed and buy nothing, because each 301s to a `www` host that is not.
-      The prior is poor, since every Singapore institution measured so far
-      publishes no feed; the agencies are the exception worth the round, since
-      HSA is the drug and device regulator and SMC publishes the ethics
-      rulings the `ethics` section is short of.
+- [ ] **Add HSA — the highest-value item on the survey.** The institutional
+      hosts were opened and swept on 2026-08-27: 21 publish no feed, as the
+      prior said. HSA overturns it, because "no feed" was the wrong question.
+      `www.hsa.gov.sg/announcements/` is Isomer Next exactly like MOH's
+      newsroom, and `sources/moh.py` parses it with only `ITEM_BASE` and
+      `RECORD_RE` repointed — both derivable from the source's own `url`.
+      ~3.1 items/week of product recalls, safety advisories, Dear Healthcare
+      Professional letters and regulatory updates: Singapore's drug and device
+      regulator, and the second source of Singapore-*specific* health news the
+      set would have. Check its Terms of Use first and start at `link_only` —
+      [asia-sources.md, sixth sweep](asia-sources.md).
+- [ ] **Three hosts left to open, and two to retire.** `www.aic.sg` was missed
+      in the opening. `corp.nhg.com.sg` and `www.nhghealth.com.sg` replace five
+      rows, since NHG has consolidated TTSH, KTPH, IMH and NCID onto one host.
+      Retire `lkcmedicine.ntu.edu.sg` (no DNS record at all — which is what its
+      long-standing "gateway 502" always was; the school is at
+      `www.ntu.edu.sg/medicine`) and `www.smj.org.sg` (the *host* resets TLS
+      from a datacenter address, the position BMJ is in — no allowlist change
+      fixes it). All annotated in
+      [`config/sg-institutional-hosts.txt`](../config/sg-institutional-hosts.txt).
 
 ---
 
@@ -202,6 +212,7 @@ Dated decisions, newest first. Each links to where the reasoning lives.
 
 | Date | Decision |
 |---|---|
+| 2026-08-27 | **Singapore institutional hosts opened and swept** — 8 blocked, 3 challenge, 7 feed, 21 no feed. The prior held (no Singapore institution publishes a feed) but stopped at the wrong question: **HSA ships the same Isomer Next index MOH does, and `sources/moh.py` parses it unchanged** — ~3.1 items/week of recalls and safety advisories, and the second source of Singapore-specific health news the set could have. HPB is the same platform but 0.1/week and three months stale; SMC is Isomer with no article index. Also found: NHG has consolidated TTSH, KTPH, IMH and NCID onto one host, so two hosts replace five; `lkcmedicine.ntu.edu.sg` has no DNS record, which explains its long-standing 502; and `www.smj.org.sg` is refused by the host rather than the policy — [asia-sources.md, sixth sweep](asia-sources.md) |
 | 2026-08-27 | **Singapore coverage audited end to end, and the last candidate measured.** All 18 sources polled (416 items): 50 are Singapore-published, and exactly 1 of the other 366 mentions Singapore at all. Annals is Singapore's journal covering the *region*, not Singapore — 7 of its 10 items match "Singapore" only in a WordPress footer — so **MOH is the digest's only source of Singapore-specific health news**. Fixed a real defect the audit surfaced: that footer was being stored as body text, and for Annals' shortest item it *was* the whole rendered extract. `www.koreabiomed.com` opened and was measured; 31 Singapore institutional hosts remain refused at CONNECT and unmeasured; the Duke-NUS "reachable, no feed" note was corrected to "still Incapsula-blocked" — [asia-sources.md, fifth sweep](asia-sources.md) |
 | 2026-08-27 | **CNA closed for good.** A fourth sweep tried every remaining delivery route: the robots-allowed `/api/v1/google-news-feed` (full text, but a 9.3-hour window at ~129 items/day and no category filter), the news sitemap, scraping the health sections (no dates at all, and evergreen rather than current), Drupal JSON:API (403), per-topic feeds (404), the `cnalifestyle` subdomain (blocked), and Google News with `when:7d` (68% radio and TV segments, and no publisher URL anywhere). The blocker is upstream of delivery: CNA barely publishes health journalism — [asia-sources.md, fourth sweep](asia-sources.md) |
 | 2026-08-26 | **CNA rejected.** `www.channelnewsasia.com` was opened and CNA measured end to end: no health feed at any path, 1 health item in 40, zero effect on the built issue. Rows kept disabled in `candidates-asia.yaml` as the record — [asia-sources.md, third sweep](asia-sources.md) |

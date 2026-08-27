@@ -751,6 +751,140 @@ rather than promotes it:
 
 ---
 
+## Sixth sweep — 2026-08-27, the institutional hosts opened and measured
+
+The fifth sweep named 32 Singapore institutional hosts that had never been
+reachable. They were opened the same day, and this is what is behind them.
+Run with `tools/probe_feeds.py --file config/sg-institutional-hosts.txt`.
+
+```
+8 blocked, 3 challenge, 7 feed, 21 no feed
+```
+
+**The prior held, and one host overturned it.** Twenty-one of these serve real
+pages and publish no feed at all, which is what every previously-measured
+Singapore institution did. But "no feed" was the wrong question to stop on:
+MOH publishes no feed either and is a configured source, because `sources/moh.py`
+reads its newsroom index out of the page. **HSA does the same thing, on the same
+platform, and the existing adapter parses it unchanged.**
+
+### HSA is pollable today, and it is the find of the sweep
+
+`www.hsa.gov.sg/announcements/` is Isomer Next, exactly like MOH's newsroom, and
+its flight payload carries 329 dated index records in a byte-identical shape:
+
+```json
+{"id":"/announcements/recall-of-carbimazole-5-tablet-5-mg",
+ "date":"$D2026-08-26T00:00:00.000Z",
+ "plaintextTags":[{"category":"Category","selected":["Product Recalls"]}]}
+```
+
+Driving `sources/moh.py` against it — with only `ITEM_BASE` and `RECORD_RE`
+repointed, no other change — parses 40 items cleanly:
+
+| Category | Items in the 40-record window |
+|---|---|
+| Consumer Safety Articles | 14 |
+| Product Recalls | 9 |
+| Press Releases | 9 |
+| Public Consultations | 2 |
+| Dear Healthcare Professional Letters | 2 |
+| Regulatory Updates | 2 |
+| Speeches | 1 |
+| Feature Articles | 1 |
+
+A 90-day window at **~3.1 items a week** — twice MOH's steady rate — and the
+register is the one this digest is short of. The current window carries a
+carbimazole recall, an advisory on ivermectin for unproven clinical uses,
+etomidate vaporiser trafficking charges, and Dear Healthcare Professional
+letters. This is Singapore's drug and device regulator, and it is the closest
+thing to an FDA/MHRA safety stream the set has ever had — Singapore-specific,
+which after the fifth sweep only MOH was.
+
+**What it would take.** The adapter is one generalisation away: `ITEM_BASE` and
+the `/newsroom/` slug in `RECORD_RE` are the only MOH-specific values in it, and
+both are derivable from the source's own `url`. Everything else — the partial
+range, the flight-payload parse, the `"])`-inside-a-string trap, the JSON-string
+decode, title recasing, the item cap — applies unchanged. Licence needs checking
+before it ships: MOH's Terms of Use are restrictive and HSA is a different agency
+with its own, so start at `link_only`.
+
+Not done here, because it adds a source rather than measuring one, and that is
+the same content call `koreabiomed` is parked on.
+
+### Same platform, no use
+
+**HPB** (`/newsroom/`) is Isomer Next with the same index — and effectively dead:
+its 40 records span **3,984 days**, about 0.1 items a week, and the newest is
+2026-05-21, three months stale at the time of writing. Wrong register too
+(brisk-walking campaigns, a wellness app winding down). Not worth a row.
+
+**SMC** (`/publications-and-newsroom/`) is Isomer Next, but its payload carries
+**zero** dated records — the `"items"` arrays in it are navigation menus, not an
+article index. Its newsroom is built differently and would need its own parser.
+That is a shame: SMC publishes the disciplinary and ethics rulings the `ethics`
+section is chronically short of, and it was the second-best reason to open this
+set. Worth one more look from a browser before it is written off.
+
+**gov.sg** is Isomer Next as well, and is the whole-of-government feed rather
+than a health one — the Straits Times failure mode, at government scale.
+
+### Feeds found, and why none earns a row
+
+| Host | Feed | Volume | Verdict |
+|---|---|---|---|
+| `www.asianscientist.com` | `/feed/` | 30 items, newest 2026-08-26 | Science-wide, not health. Singapore-based, but the same breadth problem as NUS Newsroom |
+| `www.businesstimes.com.sg` | `/rss.xml` | 100 items, newest 2026-08-27 | Business news; healthcare only as a sector. Paywalled |
+| `mothership.sg` | `/feed/` | 10 items, newest 2026-08-26 | General consumer news |
+
+None of the twelve clusters and hospitals publishes a feed, and none of the
+agencies does either. That is now measured rather than assumed.
+
+### Still not reachable, and each for a different reason
+
+The three that did not open are worth separating, because only one is an
+allowlist matter:
+
+| Host | State |
+|---|---|
+| `www.aic.sg` | **Still refused at CONNECT** (403), apex and `www` alike, while DNS resolves fine. Simply missed in the opening — one entry to add |
+| `www.smj.org.sg` | **The host refuses us, not the policy.** CONNECT now succeeds; the origin resets the TLS connection immediately after Client Hello, and plain HTTP answers 403. That is the position BMJ is in — a datacenter-address block — and no allowlist change fixes it |
+| `lkcmedicine.ntu.edu.sg` | **The hostname has no DNS record at all** — neither A nor AAAA, while `ntu.edu.sg` and `www.ntu.edu.sg` resolve normally. This finally explains the "gateway 502" carried since the first sweep: the gateway cannot resolve it. The school now lives at `www.ntu.edu.sg/medicine`, which serves a 200. Retire the hostname |
+
+### The redirect trap again, in a new form
+
+Five hosts came back BLOCKED despite answering a `3xx` to a plain request,
+because the redirect target is a separate CONNECT and none of the targets was
+opened. Chasing them turned up a structural change worth recording:
+
+| Requested | Redirects to |
+|---|---|
+| `www.nhg.com.sg` | `corp.nhg.com.sg` |
+| `www.ttsh.com.sg` | `www.nhghealth.com.sg/ttsh` |
+| `www.ktph.com.sg` | `www.nhghealth.com.sg/ktph` |
+| `www.imh.com.sg` | `www.nhghealth.com.sg/imh` |
+| `www.ncid.sg` | `www.nhghealth.com.sg/ncid` |
+| `www.todayonline.com` | `www.channelnewsasia.com/today` |
+
+**The National Healthcare Group has consolidated.** Tan Tock Seng, Khoo Teck
+Puat, IMH and NCID are no longer separate sites — they are paths under one host.
+So the ask shrinks rather than grows: **two hosts, `corp.nhg.com.sg` and
+`www.nhghealth.com.sg`, replace five.** Both are refused at CONNECT today.
+
+TODAY needs nothing: it is now a CNA section, and CNA was measured and rejected
+in the [third](#third-sweep--2026-08-26-cna-opened-and-measured) and
+[fourth](#fourth-sweep--2026-08-27-every-other-route-into-cna) sweeps. Its
+`NO FEED` verdict here is that redirect landing on a CNA page.
+
+### One more Incapsula host
+
+`www.nus.edu.sg` answers with the same 212-byte Incapsula stub as Duke-NUS and
+`medicine.nus.edu.sg` — a 200 that is not a page. Three NUS hosts, one bot
+wall. `news.nus.edu.sg` is the exception and serves its feed normally, which is
+why it could be measured and rejected in the second sweep.
+
+---
+
 ## Recommendation
 
 1. ~~Add `lancet_wpc` and `lancet_sea`~~ — **done.** Both in `sources.yaml` at
@@ -775,12 +909,23 @@ rather than promotes it:
    week would roughly double the store's intake. **The survey now has no
    unmeasured candidates** — adding it is a content decision, not a technical
    one.
-7. **Decide whether the Singapore institutional hosts are worth opening.** The
-   fifth sweep found 31 of them still refused at CONNECT and never measured —
-   the clusters, the hospitals, HSA, HPB, HealthHub, SMA, SMJ, A\*STAR. The
-   prior on them is poor: every Singapore institution that *has* been measured
-   published no feed. Worth asking for only alongside a consumer-health or
-   institutional-research section.
+7. ~~Decide whether the Singapore institutional hosts are worth opening~~ —
+   **done, opened, and measured** in the sixth sweep. 21 of them publish no
+   feed, which is what the prior said. But one overturned it:
+8. **Add HSA.** `www.hsa.gov.sg/announcements/` is Isomer Next like MOH, and
+   `sources/moh.py` parses it with only `ITEM_BASE` and `RECORD_RE` repointed —
+   both derivable from the source's own `url`. ~3.1 items a week of product
+   recalls, safety advisories, Dear Healthcare Professional letters and
+   regulatory updates: Singapore's drug and device regulator, and the closest
+   thing to an FDA/MHRA safety stream this set has had. Check its Terms of Use
+   and start at `link_only`. **This is the highest-value open item on the
+   survey.**
+9. **Open three more hosts, and retire two.** `www.aic.sg` was missed in the
+   opening. `corp.nhg.com.sg` and `www.nhghealth.com.sg` replace five rows,
+   because NHG has consolidated TTSH, KTPH, IMH and NCID onto one host. Retire
+   `lkcmedicine.ntu.edu.sg`, which has no DNS record at all (the school is at
+   `www.ntu.edu.sg/medicine` now), and `www.smj.org.sg`, which the *host*
+   refuses — a TLS reset from a datacenter address, the position BMJ is in.
 
 With CNA settled, the Singapore general-news gap is closed as *unfillable*
 rather than open: the Straits Times, NUS Newsroom and CNA all failed the same
@@ -793,3 +938,7 @@ regional four carrying Asia and Singapore. The fifth sweep measured what that
 buys: 12% of the store is Singapore-published, 18% of a built issue is, and
 **MOH is the only source of Singapore-specific health news in the set** —
 Annals is Singapore's journal covering the region, not Singapore.
+
+The sixth sweep is what changes that. HSA is the second such source, it is
+pollable with the adapter already in the tree, and at ~3.1 items a week it
+would roughly triple the Singapore-specific supply.

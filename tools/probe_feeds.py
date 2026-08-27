@@ -230,24 +230,35 @@ def probe(host: str) -> dict:
     return result
 
 
-def render(results: list[dict]) -> None:
+def header() -> None:
     print(f"{'HOST':<32} {'VERDICT':<10} DETAIL")
-    print("-" * 96)
-    for r in results:
-        print(f"{r['host']:<32} {r['verdict']:<10} {r['detail']}")
-        for feed in r["feeds"]:
-            robots = {True: "robots ok", False: "ROBOTS DISALLOW",
-                      None: "robots unknown"}[feed["robots_ok"]]
-            how = "advertised" if feed["advertised"] else "guessed path"
-            print(f"{'':<32} {'':<10}   → {feed['url']}")
-            print(f"{'':<32} {'':<10}     {feed['format']}, {feed['items']} items, "
-                  f"newest {feed['newest']}, {how}, {robots}")
+    print("-" * 96, flush=True)
 
+
+def render_one(r: dict) -> None:
+    """One host's line, flushed immediately.
+
+    A full institutional sweep takes a quarter of an hour — the per-host
+    delay is deliberate, since several of these publish a Crawl-delay — so
+    holding every line until the end makes the run look hung.
+    """
+    print(f"{r['host']:<32} {r['verdict']:<10} {r['detail']}")
+    for feed in r["feeds"]:
+        robots = {True: "robots ok", False: "ROBOTS DISALLOW",
+                  None: "robots unknown"}[feed["robots_ok"]]
+        how = "advertised" if feed["advertised"] else "guessed path"
+        print(f"{'':<32} {'':<10}   → {feed['url']}")
+        print(f"{'':<32} {'':<10}     {feed['format']}, {feed['items']} items, "
+              f"newest {feed['newest']}, {how}, {robots}")
+    sys.stdout.flush()
+
+
+def render_tally(results: list[dict]) -> None:
     tally: dict[str, int] = {}
     for r in results:
         tally[r["verdict"]] = tally.get(r["verdict"], 0) + 1
     print("\n" + ", ".join(f"{count} {verdict.lower()}"
-                           for verdict, count in sorted(tally.items())))
+                           for verdict, count in sorted(tally.items())), flush=True)
 
 
 def main() -> int:
@@ -266,8 +277,13 @@ def main() -> int:
     if not hosts:
         ap.error("give at least one host, or --file")
 
-    results = [probe(host) for host in hosts]
-    render(results)
+    header()
+    results = []
+    for host in hosts:
+        result = probe(host)
+        results.append(result)
+        render_one(result)
+    render_tally(results)
     if args.json:
         with open(args.json, "w", encoding="utf-8") as fh:
             json.dump(results, fh, indent=2)
