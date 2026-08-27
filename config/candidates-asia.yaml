@@ -341,7 +341,9 @@ sources:
 #   moh.gov.sg   /rss, /feed.xml, /newsroom/rss.xml all 404 — now a configured
 #                source all the same: sources/moh.py reads the 8,367-item index
 #                out of the newsroom page's Next.js payload. See
-#                docs/asia-sources.md and tools/moh_newsroom_probe.py.
+#                docs/asia-sources.md and tools/isomer_newsroom_probe.py.
+#   hsa.gov.sg   same platform, same absence of a feed — configured 2026-08-27
+#                as hsa_sg through the same sources/isomer.py adapter.
 #
 # No regional split available:
 #   who.int      /southeastasia/api/news/newsitems and the Western Pacific

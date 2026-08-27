@@ -146,22 +146,28 @@ def check_odata(url: str) -> dict:
     return row
 
 
-def check_moh(url: str) -> dict:
-    """MOH has no feed: the index is read out of a Next.js flight payload.
+def check_isomer(url: str, *, key: str = "moh_sg",
+                 max_items: int | None = None) -> dict:
+    """The Isomer agencies have no feed: the index is read out of a Next.js
+    flight payload.
 
     Delegating to the adapter keeps one parser rather than two — this sweep
     is a gate, and a gate that checks something other than what the poller
-    does is not one. Imported lazily so the rest of the sweep still runs
-    from a checkout without the package importable.
+    does is not one. That is also why `key` and `max_items` come from the
+    config row rather than being assumed: two agencies share this adapter,
+    and a sweep reporting the wrong one would be worse than no sweep.
+    Imported lazily so the rest of the sweep still runs from a checkout
+    without the package importable.
     """
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
     from healthcare_newsfeed.models import Licence, Source
     from healthcare_newsfeed.sources.base import FeedError
-    from healthcare_newsfeed.sources.moh import WINDOW_BYTES, MohNewsroomAdapter
+    from healthcare_newsfeed.sources.isomer import WINDOW_BYTES, IsomerNewsroomAdapter
 
     row: dict = {"http": 0, "ok": False, "format": "next-flight", "blocked": False}
-    source = Source(key="moh_sg", name="MOH", url=url, adapter="moh_newsroom",
-                    licence=Licence.LINK_ONLY, weight=1.0, sections=())
+    source = Source(key=key, name=key, url=url, adapter="isomer_newsroom",
+                    licence=Licence.LINK_ONLY, weight=1.0, sections=(),
+                    max_items=max_items)
     code, body = fetch(url, headers={"Range": f"bytes=0-{WINDOW_BYTES}"})
     row["http"] = code
     row["blocked"] = code in BLOCKED_CODES
@@ -169,7 +175,7 @@ def check_moh(url: str) -> dict:
         row["error"] = body.decode("utf-8", "replace")[:100].strip()
         return row
     try:
-        items = MohNewsroomAdapter().parse(body, source)
+        items = IsomerNewsroomAdapter().parse(body, source)
     except FeedError as exc:
         row["error"] = str(exc)[:100]
         return row
@@ -222,8 +228,13 @@ def main() -> int:
         if not source.get("enabled", defaults.get("enabled", True)):
             continue
         adapter = source.get("adapter", defaults.get("adapter", "rss"))
-        check = {"who_odata": check_odata, "moh_newsroom": check_moh}.get(adapter, check_rss)
-        row = check(source["url"])
+        if adapter == "who_odata":
+            row = check_odata(source["url"])
+        elif adapter == "isomer_newsroom":
+            row = check_isomer(source["url"], key=source["key"],
+                               max_items=source.get("max_items"))
+        else:
+            row = check_rss(source["url"])
         row["key"] = source["key"]
         rows.append(row)
         if not row["ok"]:

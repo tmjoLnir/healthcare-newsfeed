@@ -11,6 +11,7 @@ configured set spans RSS 1.0 (RDF), RSS 2.0, Atom and OData JSON.
 | `nature_med_rss1.xml` | `nature.com/nm.rss` | RSS 1.0 (RDF) | 2026-08-25 | 3 of 8 items |
 | `conversation_uk_atom.xml` | `theconversation.com/uk/health/articles.atom` | Atom 1.0 | 2026-08-25 | 3 of 25 entries |
 | `annals_sg_rss2.xml` | `annals.edu.sg/feed/` | RSS 2.0 (WordPress) | 2026-08-27 | 3 of 10 items |
+| `hsa_announcements_partial.html` | `hsa.gov.sg/announcements/` | Isomer Next (RSC) | 2026-08-27 | 6 of 12 records |
 | `who_news_odata.json` | `who.int/api/news/newsitems` | OData JSON | 2026-08-25 | 3 of 20 records |
 | `who_dons_odata.json` | `who.int/api/news/diseaseoutbreaknews` | OData JSON | 2026-08-25 | 2 of 20 records |
 
@@ -19,7 +20,7 @@ The feeds were trimmed by deleting trailing entry elements only — except
 because the property under test sits seventh in a ten-item window. Everything
 else is byte-for-byte as served. The two OData captures were truncated by
 slicing the `value` array and re-serialising, so their whitespace differs from
-the wire — no field was altered or removed. Four deliberate properties worth
+the wire — no field was altered or removed. Five deliberate properties worth
 preserving when refreshing them:
 
 * `nature_med_rss1.xml` keeps its full `<items><rdf:Seq>` block — eight
@@ -44,6 +45,14 @@ preserving when refreshing them:
   the rendered extract was boilerplate end to end. Keep a short item and a long
   one when refreshing — the long one is what proves the strip is anchored at
   the end and does not eat the article.
+
+* `hsa_announcements_partial.html` is `moh_newsroom_partial.html`'s pair, and
+  the reason both are kept: the adapter is shared, and nothing in it is allowed
+  to be agency-specific. It is the index chunk of a byte-ranged response —
+  `self.__next_f.push([1,"…` opened and never closed — holding six whole
+  records and a seventh cut mid-object, under `/announcements/` rather than
+  `/newsroom/`. Rebuild it the same way as MOH's, from a live
+  `Range: bytes=0-500000` fetch of `https://www.hsa.gov.sg/announcements/`.
 
 * `moh_newsroom_partial.html` is the odd one out: a trimmed capture rather
   than a whole response, because the whole response is 7.5 MB. It keeps the

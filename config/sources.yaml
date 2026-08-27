@@ -169,11 +169,11 @@ sources:
     sections: [policy, also_reading]
     retention_days: 6
 
-  # --- Singapore official (no feed at all; see sources/moh.py) -------------
+  # --- Singapore official (no feed at all; see sources/isomer.py) ----------
   - key: moh_sg
     name: MOH Singapore
     url: https://www.moh.gov.sg/newsroom/
-    adapter: moh_newsroom
+    adapter: isomer_newsroom
     weight: 1.0                # the health ministry of the audience's own country
     sections: [policy, also_reading]
     retention_days: 21         # verified: 40 records, the adapter's cap
@@ -197,7 +197,46 @@ sources:
       40-record cap — because window() selects on when an item was stored. The
       cap is sized for that: at 200 records the first poll reached back four
       months and could have filled the policy section with an April
-      Parliamentary QA scoring 0.0 on recency. See sources/moh.py.
+      Parliamentary QA scoring 0.0 on recency. See sources/isomer.py.
+
+
+  - key: hsa_sg
+    name: HSA Singapore
+    url: https://www.hsa.gov.sg/announcements/
+    adapter: isomer_newsroom
+    weight: 1.0                # Singapore's own drug and device regulator
+    sections: [policy, also_reading]
+    max_items: 12              # ~4 weeks at HSA's rate; see the note
+    retention_days: 28         # verified: 12 records reach back ~27 days
+    notes: >
+      Singapore's Health Sciences Authority — the local counterpart to the FDA
+      and MHRA notices this digest already carries indirectly, and the second
+      source of Singapore-specific health news in the set after MOH. Found in
+      the sixth regional sweep; see docs/asia-sources.md.
+
+      Same Isomer Next platform as moh_sg and the same record shape, so it
+      needs no code of its own: the adapter takes the item base and the slug
+      prefix from this url. /rss, /feed.xml and /announcements/rss.xml all
+      404, as they do for MOH.
+
+      Volume is about 3.1 items a week over a 90-day window — Product Recalls,
+      Consumer Safety Articles, Dear Healthcare Professional Letters,
+      Regulatory Updates, Public Consultations and Press Releases. That is
+      roughly twice MOH's steady rate and a better fit for `policy`, which is
+      why the weight matches MOH's rather than sitting under it.
+
+      max_items is 12 rather than the adapter's default of 40 because a count
+      is a poor proxy for a span: 40 covers three weeks of MOH but ninety days
+      of HSA, and window() selects on when an item was *stored*, so the first
+      poll would make a three-month-old recall a candidate for that week's
+      issue at 0.0 recency. Twelve reaches back about four weeks, which is the
+      same margin moh_sg's forty buys it.
+
+      Licence is link_only. HSA's Terms of Use (last updated 13 March 2026)
+      permit the site "for your own personal use" at 1, and 4.3 requires
+      written permission to reproduce any material beyond what the Copyright
+      Act allows. Same position as MOH, and the index carries no description
+      anyway, so items render as title and link.
 
   # --- Official (public domain, JSON not RSS) ------------------------------
   - key: who_news
@@ -237,6 +276,7 @@ sources:
 #   moh.gov.sg           no RSS (Isomer platform), all feed paths 404 — but the
 #                        newsroom index is readable another way; see
 #                        docs/asia-sources.md
+#   hsa.gov.sg           same platform, same absence of a feed, same solution
 #   medicine.nus.edu.sg  WordPress with feeds disabled (500, "No feed available")
 #   duke-nus.edu.sg      reachable again 2026-08-25, but no feed at any path
 #   lkcmedicine.ntu.edu.sg  gateway 502

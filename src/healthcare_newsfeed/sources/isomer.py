@@ -1,37 +1,47 @@
-"""MOH Singapore newsroom adapter.
+"""Isomer Next newsroom adapter — the Singapore agencies that have no feed.
 
-MOH publishes no feed. `/rss`, `/feed.xml` and `/newsroom/rss.xml` all 404,
-and the site runs on Isomer Next — a Next.js platform with no syndication.
-The survey recorded it as unreachable, and covering it as a page-scraping
-job. Neither is quite right: the newsroom listing page ships its whole index
-inside the React Server Component flight payload, and the host honours byte
-ranges, so one partial request reads it.
+Several Singapore government sites run on Isomer Next, a Next.js platform with
+no syndication at all: MOH's `/rss`, `/feed.xml` and `/newsroom/rss.xml` every
+one 404s, and HSA is the same. The survey recorded them as unreachable, and
+covering them as a page-scraping job. Neither is quite right: an Isomer listing
+page ships its whole index inside the React Server Component flight payload, so
+one partial request reads it.
 
-    GET https://www.moh.gov.sg/newsroom/   Range: bytes=0-500000
+    GET https://www.moh.gov.sg/newsroom/       Range: bytes=0-500000
+    GET https://www.hsa.gov.sg/announcements/  Range: bytes=0-500000
 
-The page is 7.5 MB and the index starts about 4.3% in, ordered newest first,
+MOH's page is 7.5 MB and the index starts about 4.3% in, ordered newest first,
 so the first 0.5 MB carries roughly four months of it. CloudFront grants that
 range only sometimes — see WINDOW_BYTES — so the adapter reads at most
-MAX_ITEMS records whichever size arrives, and parses a partial and a whole page
-the same way. That cap, not the byte range, is what bounds a poll. Records look
-like this, embedded in a chunk of escaped JSON:
+`max_items` records whichever size arrives, and parses a partial and a whole
+page the same way. That cap, not the byte range, is what bounds a poll. Records
+are identical in shape across agencies, embedded in a chunk of escaped JSON:
 
     {"id":"/newsroom/<slug>","date":"$D2026-08-24T00:00:00.000Z",
      "plaintextTags":[{"category":"Category","selected":["Speeches"]}],
      "title":"SPEECH BY MR TAN KIAT HOW, ...","description":" "}
 
-Three consequences shape what is below:
+**Nothing here is agency-specific.** The item base and the slug prefix both
+come from the source's own `url`, so a new Isomer listing needs a config row
+and no code: point `url` at the listing and the records under that same path
+are what it reads.
+
+Four consequences shape what is below:
 
 *   **A granted range cuts the payload mid-string**, so both the chunk split
     and the record scan end on the last complete unit rather than expecting a
     closed array. That is a normal case here, not an error case.
-*   **`description` is always blank**, and MOH's Terms of Use forbid
-    reproducing site contents without written permission, so items carry no
-    summary and reach the digest as title and link — the same shape as WHO
-    news items. Item pages do carry the full body, deliberately not used.
-*   **Titles are published in capitals**, which would shout among the
+*   **`description` is always blank**, and both agencies' Terms of Use forbid
+    reproducing site contents without written permission — MOH's outright,
+    HSA's at 4.3 — so items carry no summary and reach the digest as title and
+    link, the same shape as WHO news items. Item pages do carry the full body,
+    deliberately not used.
+*   **MOH publishes titles in capitals**, which would shout among the
     sentence-case headlines of every other source, so `title_case` restores
-    them. It is a best-effort transformation; see its docstring.
+    them. HSA does not, and `title_case` leaves a headline that is not all
+    capitals exactly as it is, so it costs that source nothing.
+*   **The record cap is per source**, because a count is a poor proxy for a
+    span and the two agencies publish 20x apart. See MAX_ITEMS.
 """
 
 from __future__ import annotations
@@ -39,11 +49,10 @@ from __future__ import annotations
 import datetime as dt
 import json
 import re
+from urllib.parse import urlsplit
 
 from ..models import RawItem, Source
 from .base import FeedError, HttpSource, clean_text
-
-ITEM_BASE = "https://www.moh.gov.sg"
 
 # The page is 7.5 MB and the index starts 4.3% in, newest first, so asking for
 # the first 0.5 MB is enough — when it is granted. MOH sits behind CloudFront,
@@ -71,6 +80,13 @@ WINDOW_BYTES = 500_000
 # issue — and select() has no score floor, so a stale item still fills an
 # optional section when nothing else competes for it.
 MAX_ITEMS = 40
+"""The default when a source sets no `max_items`, sized against MOH.
+
+A count is a poor proxy for a span, and that is exactly why the field exists.
+40 covers three weeks of MOH but a quarter of a year of HSA, which publishes
+about 3 items a week against MOH's 11 — so HSA sets its own, and a third
+agency should size its own against how often it actually posts rather than
+inherit this one."""
 
 # Next.js streams the payload as a sequence of JS string literals.
 PUSH_PREFIX = 'self.__next_f.push([1,"'
@@ -81,14 +97,33 @@ PUSH_SUFFIX = '"])'
 # tolerantly: the payload is compact today, but its whitespace is a property
 # of Next.js's serializer rather than anything MOH controls.
 ITEMS_RE = re.compile(r'"items"\s*:\s*\[')
-RECORD_RE = re.compile(r'\{\s*"id"\s*:\s*"/newsroom/')
+
+
+def _listing_path(url: str) -> str:
+    """The path records hang off, from the source's own url.
+
+    `https://www.hsa.gov.sg/announcements/` gives `/announcements/`, and the
+    index records under it carry `"id":"/announcements/<slug>"`. Normalised to
+    a trailing slash so a config row written without one still matches only
+    that listing, rather than every path it prefixes.
+    """
+    path = urlsplit(url).path or "/"
+    return path if path.endswith("/") else path + "/"
+
+
+def _record_re(listing: str) -> re.Pattern[str]:
+    """Records of this listing, as opposed to the navigation and breadcrumb
+    structures that also carry listing links earlier in the payload. Matched
+    tolerantly: the payload is compact today, but its whitespace is a property
+    of Next.js's serializer rather than anything the agency controls."""
+    return re.compile(r'\{\s*"id"\s*:\s*"' + re.escape(listing))
 
 # React marks a Date value with this prefix inside the JSON string.
 DATE_MARKER = "$D"
 
 
-class MohNewsroomAdapter(HttpSource):
-    """Fetch MOH's newsroom index and return its current items."""
+class IsomerNewsroomAdapter(HttpSource):
+    """Fetch one Isomer Next listing index and return its current items."""
 
     def fetch(self, source: Source) -> list[RawItem]:
         response = self.get(source.url, source.key,
@@ -111,7 +146,9 @@ class MohNewsroomAdapter(HttpSource):
                 f"request did not reach it"
             )
 
-        records = _index_records(payload, source)
+        listing = _listing_path(source.url)
+        records = _index_records(payload, source, listing,
+                                 source.max_items or MAX_ITEMS)
         items = []
         for record in records:
             title = clean_text(record.get("title") or "")
@@ -121,15 +158,15 @@ class MohNewsroomAdapter(HttpSource):
             items.append(RawItem(
                 source_key=source.key,
                 title=title_case(title),
-                url=ITEM_BASE + slug,
+                url=_origin(source.url) + slug,
                 published=_published(record),
                 # The index carries a `description` key, but it is blank for
-                # every record, and MOH's Terms of Use put the body text on
-                # the item pages out of reach. Title and link it is.
+                # every record, and both agencies' Terms of Use put the body
+                # text on the item pages out of reach. Title and link it is.
                 summary="",
                 categories=_categories(record),
-                # The slug is MOH's own stable identifier for the item and
-                # the path the canonical URL is built from.
+                # The slug is the agency's own stable identifier for the
+                # item, and the path the canonical URL is built from.
                 guid=slug,
             ))
         return items
@@ -187,7 +224,14 @@ def _decode(raw: str) -> str:
     return ""
 
 
-def _index_records(payload: str, source: Source) -> list[dict]:
+def _origin(url: str) -> str:
+    """Scheme and host of the source's url, to hang item slugs off."""
+    parts = urlsplit(url)
+    return f"{parts.scheme}://{parts.netloc}"
+
+
+def _index_records(payload: str, source: Source, listing: str,
+                   cap: int) -> list[dict]:
     """Read the listing's item array, which the byte range leaves unclosed.
 
     Records are decoded one at a time from the first `"items":[` onward, so a
@@ -198,15 +242,16 @@ def _index_records(payload: str, source: Source) -> list[dict]:
     array = ITEMS_RE.search(payload)
     if array is None:
         raise FeedError(
-            f"{source.key}: newsroom page carries no \"items\" array — "
+            f"{source.key}: listing page carries no \"items\" array — "
             f"the listing's shape has changed"
         )
 
+    record_re = _record_re(listing)
     decoder = json.JSONDecoder()
     records: list[dict] = []
     position = array.end()
-    while len(records) < MAX_ITEMS:
-        found = RECORD_RE.search(payload, position)
+    while len(records) < cap:
+        found = record_re.search(payload, position)
         if found is None:
             break
         try:
@@ -217,11 +262,13 @@ def _index_records(payload: str, source: Source) -> list[dict]:
             records.append(record)
 
     if not records:
-        # A quiet week still leaves an archive of 8,000 items in the index.
-        # Nothing at all means the fetch or the parse failed, not that MOH
-        # published nothing.
+        # A quiet week still leaves an archive of thousands of items in the
+        # index. Nothing at all means the fetch or the parse failed, or the
+        # url points at a listing whose records live under another path — not
+        # that the agency published nothing.
         raise FeedError(
-            f"{source.key}: found the item array but read no records from it"
+            f"{source.key}: found the item array but read no records under "
+            f"{listing!r}"
         )
     return records
 
@@ -236,7 +283,9 @@ def _published(record: dict) -> dt.datetime | None:
 
 
 def _categories(record: dict) -> tuple[str, ...]:
-    """MOH's own taxonomy: Press Releases, Parliamentary QA, Speeches, Forum Replies."""
+    """The agency's own taxonomy — MOH: Press Releases, Parliamentary QA,
+    Speeches, Forum Replies; HSA: Product Recalls, Consumer Safety Articles,
+    Dear Healthcare Professional Letters, Regulatory Updates, and more."""
     for tag in record.get("plaintextTags") or []:
         if tag.get("category") == "Category" and tag.get("selected"):
             return tuple(clean_text(value) for value in tag["selected"] if value)
@@ -264,7 +313,7 @@ ACRONYMS = frozenset({
     "TTSH", "VWO", "VWOS", "WHO",
 })
 
-# Brand names MOH sets in camel case everywhere except these headlines.
+# Brand names the agencies set in camel case everywhere except these headlines.
 MIXED_CASE = {
     "MEDISAVE": "MediSave", "MEDISHIELD": "MediShield", "MEDIFUND": "MediFund",
     "CARESHIELD": "CareShield", "ELDERSHIELD": "ElderShield",
@@ -279,13 +328,13 @@ _WORD = re.compile(r"[^\W_]+(?:[&\-'’][^\W_]+)*|\S", re.UNICODE)
 
 
 def title_case(headline: str) -> str:
-    """Restore a headline MOH publishes in capitals.
+    """Restore a headline an agency publishes in capitals.
 
     Best-effort, and unavoidably so: capitalising the source destroys the
     distinction between an acronym and an ordinary word, so anything not in
     ACRONYMS or MIXED_CASE comes back as Ordinary Title Case. A headline that
-    is not all capitals is left exactly as it is, so this is a no-op if MOH
-    ever changes house style.
+    is not all capitals is left exactly as it is — so this is a no-op if MOH
+    ever changes house style, and a no-op for HSA, which never shouted.
     """
     if headline != headline.upper():
         return headline

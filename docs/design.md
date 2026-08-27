@@ -152,17 +152,28 @@ CloudFront, which answers a cache hit with the whole page and no
 200 and 7.5 MB, where the same request had returned 206 earlier that day. So
 the adapter reads at most the newest 40 records whichever size arrives, parses
 a partial page and a whole one identically, and the daily transfer swings
-between 0.5 MB and 7.5 MB depending on the cache. Handled by `sources/moh.py`.
+between 0.5 MB and 7.5 MB depending on the cache. Handled by `sources/isomer.py`.
 
-The cap, not the range, is what bounds a poll — and it is set against how MOH
-publishes rather than against a span. Parliamentary QAs arrive in same-day
-bursts of twenty or more, so 40 records reaches back three weeks where the
-~11/week average would suggest a month. Three weeks is deliberate: `window()`
-selects on when an item was *stored*, so everything the first poll returns
-becomes a candidate for that week's issue, and `select()` has no score floor —
-a stale item still fills an optional section when nothing competes for it. At
-40 the oldest item a first poll can introduce scores about 0.74 on recency; at
-200 it was four months old and scored 0.0.
+The cap, not the range, is what bounds a poll — and it is set against how the
+agency publishes rather than against a span. MOH's Parliamentary QAs arrive in
+same-day bursts of twenty or more, so 40 records reaches back three weeks where
+the ~11/week average would suggest a month. Three weeks is deliberate:
+`window()` selects on when an item was *stored*, so everything the first poll
+returns becomes a candidate for that week's issue, and `select()` has no score
+floor — a stale item still fills an optional section when nothing competes for
+it. At 40 the oldest item a first poll can introduce scores about 0.74 on
+recency; at 200 it was four months old and scored 0.0.
+
+**Which is why the cap is a source field rather than a constant.** A second
+agency arrived on the same platform — HSA, added 2026-08-27 — publishing about
+3 items a week against MOH's 11, and the same 40 records that span three weeks
+of MOH span ninety days of HSA. `max_items` is therefore set per row: MOH takes
+the adapter's 40, HSA takes 12, and both reach back about four weeks. A third
+Isomer listing should count its own output rather than inherit either.
+
+Nothing else in the adapter is agency-specific. The item base and the slug
+prefix records hang off both come from the source's own `url`, so covering
+another Isomer listing means a config row and no code.
 
 MOH itself is reachable from an Actions runner — verified in CI on 2026-08-25,
 which was granted the byte range the same day a residential path was refused
