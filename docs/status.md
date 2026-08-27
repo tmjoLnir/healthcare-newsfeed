@@ -151,12 +151,19 @@ Judgement calls rather than gaps.
       promoted on the spot: it is Korea rather than Singapore, and at ~175 items
       a week it would roughly double the store's intake. A content call, not a
       technical one — [asia-sources.md, fifth sweep](asia-sources.md).
-- [ ] **Whether to ask for the Singapore institutional hosts.** 31 of them are
-      still refused at CONNECT and have never been measured in any sweep — the
-      three clusters, the hospitals, HSA, HPB, HealthHub, SMA, SMJ, A\*STAR,
-      `data.gov.sg`. The prior is poor, since every Singapore institution that
-      has been measured turned out to publish no feed, so this is worth asking
-      for only alongside a consumer-health or institutional-research section.
+- [ ] **Get the Singapore institutional hosts opened, then sweep them.** 32 are
+      still refused at CONNECT and have never been measured — the three
+      clusters, the hospitals, HSA, HPB, HealthHub, SMC, SMA, SMJ, A\*STAR,
+      `data.gov.sg`. The ask and the sweep input are one file,
+      [`config/sg-institutional-hosts.txt`](../config/sg-institutional-hosts.txt);
+      measure them with `python tools/probe_feeds.py --file
+      config/sg-institutional-hosts.txt` once they are open. **The allowlist
+      entry has to name the `www` host** — ten of these apexes are already
+      allowed and buy nothing, because each 301s to a `www` host that is not.
+      The prior is poor, since every Singapore institution measured so far
+      publishes no feed; the agencies are the exception worth the round, since
+      HSA is the drug and device regulator and SMC publishes the ethics
+      rulings the `ethics` section is short of.
 
 ---
 

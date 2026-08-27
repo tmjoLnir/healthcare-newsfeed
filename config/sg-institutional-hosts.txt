@@ -1,0 +1,105 @@
+# Singapore institutional hosts — the allowlist ask, and the sweep input.
+#
+# None of these has ever been measured. Every one is refused at CONNECT from
+# the environments this project has run in, so the survey in
+# docs/asia-sources.md has nothing to say about them beyond "unreachable".
+#
+# Once they are open, measure them in one command:
+#
+#     python tools/probe_feeds.py --file config/sg-institutional-hosts.txt
+#
+# That reports BLOCKED / CHALLENGE / NO FEED / the feed URL per host, so a
+# host that is still refused is distinguishable from one that genuinely
+# publishes nothing — the distinction the Duke-NUS entry got wrong.
+#
+# ---------------------------------------------------------------------------
+# READ THIS BEFORE ADDING THEM TO AN ALLOWLIST
+#
+# The entry has to name the `www` host. Ten of these apexes are ALREADY open
+# and buy nothing, because each answers 301/308 to its `www` host and a
+# redirect target is a separate CONNECT:
+#
+#     singhealth.com.sg  nuhs.edu.sg  sgh.com.sg  ncid.sg  hsa.gov.sg
+#     healthhub.sg  a-star.edu.sg  ntu.edu.sg  asianscientist.com
+#
+# (nus.edu.sg is the exception — its apex serves a 200 directly.)
+#
+# This cost CNA an extra round in the third sweep and www.koreabiomed.com two
+# rounds. Measured again on 2026-08-27 and still true, so the list below names
+# the `www` host wherever the site uses one.
+# ---------------------------------------------------------------------------
+
+# --- Clusters ---------------------------------------------------------------
+# Singapore's public healthcare is three clusters. Their newsrooms are the
+# most likely institutional source of real clinical and service news.
+www.singhealth.com.sg          # SingHealth — largest cluster
+www.nuhs.edu.sg                # National University Health System
+www.nhg.com.sg                 # National Healthcare Group
+
+# --- Hospitals and national specialty centres -------------------------------
+www.sgh.com.sg                 # Singapore General Hospital
+www.ttsh.com.sg                # Tan Tock Seng Hospital
+www.ktph.com.sg                # Khoo Teck Puat Hospital
+www.cgh.com.sg                 # Changi General Hospital
+www.kkh.com.sg                 # KK Women's and Children's Hospital
+www.nccs.com.sg                # National Cancer Centre Singapore
+www.nhcs.com.sg                # National Heart Centre Singapore
+www.imh.com.sg                 # Institute of Mental Health
+www.ncid.sg                    # National Centre for Infectious Diseases
+
+# --- Agencies and statutory boards ------------------------------------------
+# The highest-value group: these publish policy, safety alerts and recalls,
+# which is the register the digest's policy section wants. HSA in particular
+# is Singapore's drug and device regulator — the local counterpart to the FDA
+# and MHRA notices the digest already carries indirectly.
+www.hsa.gov.sg                 # Health Sciences Authority — regulator
+www.hpb.gov.sg                 # Health Promotion Board
+www.healthhub.sg               # HealthHub — MOH consumer portal
+www.aic.sg                     # Agency for Integrated Care
+www.synapxe.sg                 # Synapxe — national health tech agency
+www.smc.gov.sg                 # Singapore Medical Council — ethics, discipline
+www.gov.sg                     # Government news portal, carries health
+data.gov.sg                    # Open data — note the Singapore Open Data
+                               # Licence covers Datasets, which is why MOH's
+                               # site contents are link_only but its data is not
+
+# --- Professional bodies and journals ---------------------------------------
+www.sma.org.sg                 # Singapore Medical Association — SMA News
+www.smj.org.sg                 # Singapore Medical Journal. The apex is the one
+                               # host the policy already allows, but the origin
+                               # resets the connection; the www host is refused
+                               # at CONNECT. Both need checking.
+
+# --- Universities and research ----------------------------------------------
+# news.nus.edu.sg is already reachable and was rejected in the second sweep as
+# university-wide PR, so treat this group as low prior.
+www.a-star.edu.sg              # A*STAR — biomedical research council
+www.nus.edu.sg                 # NUS (apex serves directly; www does not)
+www.ntu.edu.sg                 # NTU
+lkcmedicine.ntu.edu.sg         # LKC Medicine — recorded as a gateway 502, but
+                               # only ever through a blocked path, so the 502
+                               # has never actually been confirmed as the
+                               # origin's rather than the proxy's
+
+# --- Singapore consumer health and media ------------------------------------
+# Lower prior: the Straits Times, CNA and NUS Newsroom all failed the same way,
+# and Medical Channel Asia was rejected as consumer wellness. Included so the
+# sweep is complete rather than because any is expected to earn a row.
+www.healthxchange.sg           # SingHealth's consumer health portal
+www.asianscientist.com         # Asian Scientist — Singapore-based
+www.todayonline.com            # TODAY
+www.businesstimes.com.sg       # Business Times — healthcare business desk
+mothership.sg                  # Mothership
+www.asiaone.com                # AsiaOne
+
+# --- Already reachable, no allowlist change needed ---------------------------
+# Listed so a sweep covers them too, and so nobody asks for them twice.
+# Duke-NUS and NUS Medicine are reachable but Incapsula-blocked, which is a
+# different problem from a CONNECT refusal and is not fixed by an allowlist.
+annals.edu.sg                  # configured source
+www.moh.gov.sg                 # configured source
+news.nus.edu.sg                # measured, rejected — university-wide PR
+medicalchannelasia.com         # measured, rejected — consumer wellness
+healthcareasiamagazine.com     # measured, rejected — investor trade press
+www.duke-nus.edu.sg            # Incapsula challenge stub on every path
+medicine.nus.edu.sg            # WordPress, feeds disabled (genuine wp_die 500)

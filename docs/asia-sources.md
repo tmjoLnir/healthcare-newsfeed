@@ -644,12 +644,40 @@ path, so it remains unconfirmed; and `smj.org.sg` is the one apex the policy
 does allow, but the origin resets the connection, while `www.smj.org.sg` is
 refused at CONNECT — the apex/`www` trap that cost CNA a round, in a new place.
 
-The list is long, but the fourth sweep's conclusion holds and this sweep does
-not reopen it: these are institutional PR and consumer-health sites, and the
-one class of them that has been measured — NUS Newsroom, Duke-NUS, NUS
-Medicine, LKC — produced no feed and no health signal. Opening them is worth
-asking for only if a consumer-health or institutional-research section is ever
-wanted.
+The list is long, and the prior on it is poor: these are institutional PR and
+consumer-health sites, and the one class of them that has been measured — NUS
+Newsroom, Duke-NUS, NUS Medicine, LKC — produced no feed and no health signal.
+But "never measured" is not "rejected", and the agencies in particular are a
+different register from the schools: HSA is Singapore's drug and device
+regulator, and SMC publishes the disciplinary and ethics rulings this
+audience's `ethics` section is chronically short of.
+
+**The `www` host is the one to open.** Ten of these apexes are already
+allowed and buy nothing, because each answers 301/308 to its `www` host and a
+redirect target is a separate CONNECT — `singhealth.com.sg`, `nuhs.edu.sg`,
+`sgh.com.sg`, `ncid.sg`, `hsa.gov.sg`, `healthhub.sg`, `a-star.edu.sg`,
+`ntu.edu.sg` and `asianscientist.com` all do, and only `nus.edu.sg` serves a
+200 directly. This is the trap that cost CNA a round in the third sweep and
+`www.koreabiomed.com` two; it is now confirmed to hold across the whole
+institutional set.
+
+The ask and the sweep are the same file:
+[`config/sg-institutional-hosts.txt`](../config/sg-institutional-hosts.txt),
+grouped by what each host is and annotated with the apex/`www` state. Once
+they are open, one command measures every one of them:
+
+```bash
+python tools/probe_feeds.py --file config/sg-institutional-hosts.txt
+```
+
+`tools/probe_feeds.py` is new, and answers the question that comes *before*
+`verify_feeds.py`: given a bare hostname, is there anything here to poll? It
+tries `<link rel="alternate">` autodiscovery first, then a path list, checks
+each find against the host's `robots.txt`, and reports one of four verdicts —
+BLOCKED, CHALLENGE, NO FEED, or the feed. **CHALLENGE is a verdict of its own
+precisely because of the Duke-NUS mistake below**: a bot-check stub answered
+with a 200 is not a page, and reading it as one is how a blocked host came to
+be recorded as feed-less.
 
 ### Correction: Duke-NUS is not "reachable with no feed"
 
