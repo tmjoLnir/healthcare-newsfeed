@@ -112,7 +112,7 @@ re-litigates them. Full measurements in [asia-sources.md](asia-sources.md).
 
 | Source | Why not |
 |---|---|
-| **CNA** (Singapore + Asia) | No health feed exists at any path — seven general feeds, none health. 1 health item in 40, and polling it left the built issue byte-identical (best item 146th of 431 candidates) |
+| **CNA** (Singapore + Asia) | No health feed exists at any path — seven general feeds, none health. 1 health item in 40, and polling it left the built issue byte-identical (best item 146th of 431 candidates). Every other delivery route was tried in a fourth sweep and none works either — see the decision log |
 | **The Straits Times** | No health section feed; keyword-filtering general news yielded ~0 healthcare items. Holds under two days of history. Hard paywalled |
 | **NUS Newsroom** | University-wide PR — one of seven sampled items was health-adjacent |
 | **Healthcare Asia Magazine** | Investor and market trade press; feed also malformed (`<title>` carries a summary, summaries empty) |
@@ -173,6 +173,7 @@ Dated decisions, newest first. Each links to where the reasoning lives.
 
 | Date | Decision |
 |---|---|
+| 2026-08-27 | **CNA closed for good.** A fourth sweep tried every remaining delivery route: the robots-allowed `/api/v1/google-news-feed` (full text, but a 9.3-hour window at ~129 items/day and no category filter), the news sitemap, scraping the health sections (no dates at all, and evergreen rather than current), Drupal JSON:API (403), per-topic feeds (404), the `cnalifestyle` subdomain (blocked), and Google News with `when:7d` (68% radio and TV segments, and no publisher URL anywhere). The blocker is upstream of delivery: CNA barely publishes health journalism — [asia-sources.md, fourth sweep](asia-sources.md) |
 | 2026-08-26 | **CNA rejected.** `www.channelnewsasia.com` was opened and CNA measured end to end: no health feed at any path, 1 health item in 40, zero effect on the built issue. Rows kept disabled in `candidates-asia.yaml` as the record — [asia-sources.md, third sweep](asia-sources.md) |
 | 2026-08-25 | **Annals added** after the second regional sweep — Singapore's own peer-reviewed journal, CC-BY-NC-SA, full text in-feed. Found to be blocked from Actions runners after it shipped |
 | 2026-08-25 | **MOH adapter built** — no feed exists, so `sources/moh.py` reads the newsroom index out of the page's Next.js payload, capped at the newest 40 records — [design.md](design.md#sources-that-need-special-handling) |

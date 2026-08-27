@@ -196,7 +196,18 @@ sources:
       the issue built byte-identical to the control: CNA's best item ranked
       146th of 431 candidates at 2.200, against a cut of 2.967 at rank 11. It
       does not pollute the digest — topic_fit handles it — it simply publishes
-      nothing. Revisit only if CNA ever ships a health-section feed.
+      nothing.
+
+      A fourth sweep on 2026-08-27 tried every other delivery route and closed
+      the question: /api/v1/google-news-feed (robots-allowed, full article text,
+      but site-wide with a 9.3-hour window at ~129 items/day), the news sitemap,
+      scraping the health sections (no dates at all, and evergreen rather than
+      current), Drupal JSON:API (403), per-topic feeds (404), the cnalifestyle
+      subdomain (blocked at CONNECT), and Google News with when:7d (68% CNA938
+      radio and TV segments, and no publisher URL anywhere in the feed). Note
+      robots.txt disallows /api/* except the four sitemap and news feeds, so
+      this very URL is disallowed to crawlers. Reopen only if CNA ships a
+      health-section feed, which would appear on /rss and in robots.txt.
 
   - key: cna_asia
     name: CNA — Asia
