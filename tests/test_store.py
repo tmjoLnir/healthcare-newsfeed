@@ -15,7 +15,12 @@ import pytest
 from healthcare_newsfeed.models import RawItem
 from healthcare_newsfeed.store import Store, item_id
 
-MONDAY = dt.datetime(2026, 8, 24, tzinfo=dt.UTC)
+# The Monday that starts the current week. window() selects on first_seen,
+# which upsert() stamps with the real clock, so a fixed date here would put
+# every freshly stored item outside WEEK once that week had passed — these
+# tests were pinned to 2026-08-24 and quietly broke the following Monday.
+_TODAY = dt.datetime.now(dt.UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+MONDAY = _TODAY - dt.timedelta(days=_TODAY.weekday())
 WEEK = (MONDAY, MONDAY + dt.timedelta(days=7))
 
 
@@ -228,3 +233,14 @@ def test_each_source_keeps_one_row(store):
 def test_an_unknown_status_is_rejected(store):
     with pytest.raises(ValueError, match="unknown poll status"):
         store.record_poll("bbc_health", status="probably-fine")
+
+
+def test_last_poll_attempt_is_none_for_a_store_never_polled(store):
+    assert store.last_poll_attempt() is None
+
+
+def test_last_poll_attempt_counts_failures_too(store):
+    """It answers 'is the poll running?', which a run of failures still does."""
+    store.record_poll("nejm", status="blocked", detail="HTTP 403")
+
+    assert store.last_poll_attempt() is not None

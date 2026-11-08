@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write        # upload the store back to its release
+      actions: write         # re-enable the schedules, see the last step
     env:
       NEWSFEED_DB: data/newsfeed.db
       GH_TOKEN: ${{ github.token }}
@@ -52,3 +53,17 @@ jobs:
       - name: Save the store
         if: always() && steps.restore.outcome == 'success'
         run: tools/store_sync.sh save
+
+      # GitHub disables a scheduled workflow after 60 days without repository
+      # activity — and the store lives in a Release, so a healthy daily poll
+      # makes no commits and counts as no activity. That is exactly what
+      # happened on 2026-10-26: poll went quiet, nothing failed, and the
+      # Sunday issue found an empty week. Re-enabling through the API resets
+      # the clock without a commit. Both workflows refresh both, so either one
+      # running is enough to keep the other alive.
+      - name: Keep the schedules alive
+        if: always()
+        run: |
+          for workflow in poll.yml publish.yml; do
+            gh api --method PUT "repos/${{ github.repository }}/actions/workflows/$workflow/enable"
+          done

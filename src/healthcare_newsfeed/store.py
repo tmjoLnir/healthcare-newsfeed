@@ -219,6 +219,16 @@ class Store:
         ).fetchone()
         return _from_iso(row["last_success"]) if row else None
 
+    def last_poll_attempt(self) -> dt.datetime | None:
+        """When `newsfeed poll` last tried any source, or None if it never has.
+
+        Attempt rather than success: the question this answers is whether the
+        poll is running at all, which a run where every source failed still
+        answers yes.
+        """
+        row = self.conn.execute("SELECT max(last_attempt) AS latest FROM polls").fetchone()
+        return _from_iso(row["latest"])
+
     def next_issue(self) -> int:
         """The number the next published issue would carry."""
         row = self.conn.execute("SELECT max(issue) AS latest FROM issues").fetchone()

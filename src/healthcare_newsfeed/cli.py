@@ -234,7 +234,8 @@ def assemble(args: argparse.Namespace, store: Store) -> tuple[Digest, dict, Issu
     if not candidates:
         raise NothingToPublish(
             f"no candidates stored for {start:%Y-%m-%d} to "
-            f"{end - dt.timedelta(seconds=1):%Y-%m-%d} — has `newsfeed poll` run?"
+            f"{end - dt.timedelta(seconds=1):%Y-%m-%d} — has `newsfeed poll` run?\n"
+            f"{_poll_freshness(store)}"
         )
 
     cluster(candidates)
@@ -248,6 +249,29 @@ def assemble(args: argparse.Namespace, store: Store) -> tuple[Digest, dict, Issu
         print(f"trimmed {len(dropped)} item(s) to fit "
               f"{spec.max_messages} message(s)", file=sys.stderr)
     return digest, sources, spec, len(candidates)
+
+
+STALE_POLL = dt.timedelta(hours=36)
+
+
+def _poll_freshness(store: Store) -> str:
+    """Say when the poll last ran, so an empty week names its own cause.
+
+    An empty window has two very different explanations: a store nobody has
+    polled, and a poll that quietly stopped. The second is the one that bites
+    — GitHub disables a scheduled workflow after 60 days without repository
+    activity, and a disabled workflow produces no failed run to notice.
+    """
+    last = store.last_poll_attempt()
+    if last is None:
+        return "this store has never been polled"
+    age = dt.datetime.now(dt.UTC) - last
+    line = f"last poll: {last:%Y-%m-%d %H:%M} UTC, {age.total_seconds() / 86400:.1f} days ago"
+    if age > STALE_POLL:
+        line += (" — the daily poll has stopped. Check the poll workflow in the "
+                 "Actions tab: GitHub disables scheduled workflows after 60 days "
+                 "without repository activity (docs/deployment.md §4)")
+    return line
 
 
 def build(args: argparse.Namespace) -> int:
