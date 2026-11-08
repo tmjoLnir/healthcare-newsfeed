@@ -181,7 +181,7 @@ or proxied egress address, or a self-hosted runner.
 | `no 'newsfeed.db.gz' in release 'store'` | The asset was deleted — *not* a first run | Recover it from the Release history. Never re-bootstrap over it |
 | `store shrank from N to M items` | The file does not descend from the restored one | Investigate before the next poll; the upload was correctly refused |
 | `restored store is unusable` | The asset is corrupt | Recover from the Release history; bootstrapping past it publishes an empty store |
-| `no candidates stored for …` | Publish ran against an empty or unpolled store | Confirm the daily poll is green before the next Sunday |
+| `no candidates stored for …` | Publish ran against an empty or unpolled store. The next line gives the last poll's age; over a day means the poll has stopped — most likely GitHub's 60-day inactivity auto-disable (Actions tab shows *This scheduled workflow is disabled*) | Actions → poll → **Enable workflow**, then **Run workflow** once. Re-run publish after it is green. Both workflows now re-enable each other on every run, so this should not recur |
 | `nejm: HTTP 403` | Expected — egress reputation, not a broken feed | Nothing. Tolerated by design |
 
 A partial post is the one failure that needs a human rather than a re-run:

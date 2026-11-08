@@ -566,3 +566,25 @@ def test_build_numbers_the_issue_after_the_last_published(adapter, config, db, c
     main(["build", "--config", path, "--db", db])
 
     assert "Issue 8" in capsys.readouterr().out
+
+
+def test_an_empty_week_names_a_poll_that_has_stopped(adapter, config, db, capsys):
+    """The 2026-11-08 failure: poll auto-disabled by GitHub, publish finds nothing."""
+    import datetime as dt
+    stale = (dt.datetime.now(dt.UTC) - dt.timedelta(days=13)).strftime("%Y-%m-%dT%H:%M:%S+00:00")
+    with Store(db) as store:
+        store.migrate()
+        store.conn.execute(
+            "INSERT INTO polls (source_key, last_attempt, last_success, status) "
+            "VALUES ('bbc', ?, ?, 'ok')", (stale, stale))
+        store.conn.commit()
+
+    assert main(["build", "--config", config("bbc"), "--db", db]) == 1
+
+    error = capsys.readouterr().err
+    assert "13.0 days ago" in error and "the daily poll has stopped" in error
+
+
+def test_an_empty_store_says_it_was_never_polled(adapter, config, db, capsys):
+    assert main(["build", "--config", config("bbc"), "--db", db]) == 1
+    assert "never been polled" in capsys.readouterr().err
